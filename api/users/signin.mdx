@@ -1,0 +1,97 @@
+---
+title: "POST /signin — Sign In to Your NSN Account"
+sidebarTitle: "POST /signin"
+description: "POST /signin authenticates an existing NSN user by username or email and password. Returns a new pair of JWT access and refresh tokens."
+---
+
+Use this endpoint to authenticate an existing NSN account and receive a fresh pair of JWTs. You must provide your `password` along with either your registered `email` address or your `username` — whichever you prefer. A successful sign-in returns an **access token** for use on protected endpoints and a **refresh token** to keep your session alive without repeatedly signing in.
+
+## Endpoint
+
+```
+POST /signin
+```
+
+## Request Body
+
+<ParamField body="email" type="string">
+  The email address associated with your NSN account. Required if `username` is not provided.
+</ParamField>
+
+<ParamField body="username" type="string">
+  The username associated with your NSN account. Required if `email` is not provided.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The password for your NSN account.
+</ParamField>
+
+<Note>
+  At least one of `email` or `username` must be included in every request. Both may be supplied at the same time, but only one is necessary to identify your account.
+</Note>
+
+## Request Examples
+
+<CodeGroup>
+
+```bash Sign in with username
+curl -X POST https://api.nsn.social/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "alice_nsn",
+    "password": "s3cur3P@ss"
+  }'
+```
+
+```bash Sign in with email
+curl -X POST https://api.nsn.social/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "alice@example.com",
+    "password": "s3cur3P@ss"
+  }'
+```
+
+</CodeGroup>
+
+## Response Fields
+
+<ResponseField name="access_token" type="string">
+  A signed JWT used to authenticate your requests. Pass it as a `Bearer` token in the `Authorization` header of all protected endpoints.
+</ResponseField>
+
+<ResponseField name="access_exp" type="string">
+  The ISO 8601 timestamp indicating when the `access_token` expires (e.g. `2025-06-15T14:30:00.000000+00:00`). Requests made after this time will be rejected until you obtain a new token.
+</ResponseField>
+
+<ResponseField name="refresh_token" type="string">
+  A signed JWT you can use to obtain a new `access_token` once it has expired, without requiring you to sign in again.
+</ResponseField>
+
+<ResponseField name="refresh_exp" type="string">
+  The ISO 8601 timestamp indicating when the `refresh_token` expires (e.g. `2025-07-15T14:30:00.000000+00:00`). After this time you must sign in again to receive new tokens.
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJleHAiOjE3MTg0NTgwMDB9.Tr5K2pQn8vXoJLmZ1sYdFwRqMhNbUcEeAiGkOtPx4Vw",
+  "access_exp": "2025-06-15T14:30:00.000000+00:00",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJleHAiOjE3MjEwNTAwMDB9.8dHpLqYvNzCkWoXrTmJeUbAfSgDi2ElcOVynR6s0Kfw",
+  "refresh_exp": "2025-07-15T14:30:00.000000+00:00"
+}
+```
+
+## Error Cases
+
+| HTTP Status | Cause |
+|-------------|-------|
+| `400 Bad Request` | Both `email` and `username` are omitted |
+| `400 Bad Request` | `password` is missing from the request body |
+| `401 Unauthorized` | No account exists for the provided `username` or `email` |
+| `401 Unauthorized` | The provided `password` does not match the account's stored password |
+
+<Warning>
+  For security, NSN does not distinguish between "account not found" and "wrong password" in its error responses — both return `401 Unauthorized` with the message `Invalid credentials`. This prevents account enumeration.
+</Warning>

@@ -1,0 +1,69 @@
+---
+title: "NSN: A REST API for Social Networking Features"
+sidebarTitle: "Introduction"
+description: "NSN is a social networking REST API offering user accounts, posts, comments, likes, shares, and direct messaging. Learn what NSN can do."
+---
+
+NSN (New Social Network) is a REST API that gives you the building blocks to create rich social networking experiences. Whether you're building a community platform, a messaging app, or a content-sharing service, NSN handles the social layer so you can focus on your product. The API follows standard HTTP conventions and returns JSON responses, making it easy to integrate from any language or framework.
+
+## What NSN Provides
+
+- **User accounts** — Sign up, sign in, and manage user profiles with avatars and display names.
+- **User discovery** — Search for users by name to build friend lists and social graphs.
+- **Posts** — Create, read, update, and delete content shared with the network.
+- **Comments** — Threaded replies on any post.
+- **Likes** — Reaction counts and tracking per post or comment.
+- **Shares** — Repost or forward content to your own followers.
+- **Direct messaging** — Private conversations between users.
+
+## Explore the Docs
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Create an account, get a JWT token, and make your first authenticated call in under five minutes.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Learn how to obtain Bearer tokens via signup or signin and attach them to every request.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Browse every endpoint, its parameters, and its response shapes in the full API reference.
+  </Card>
+  <Card title="Guides" icon="book-open" href="/guides/register-and-login">
+    Step-by-step walkthroughs for common workflows like registering users and handling sessions.
+  </Card>
+</CardGroup>
+
+## Base URL
+
+All API requests are made against the following base URL:
+
+<Note>
+  **Development base URL:** `http://localhost:8000`
+
+  Replace this with your production host when you deploy.
+</Note>
+
+## Response Format
+
+Every endpoint returns JSON. Successful responses contain the data described in each endpoint's reference section. Error responses always follow this shape:
+
+```json
+{
+  "errors": {
+    "title": "Bad Request",
+    "detail": "Username too short"
+  }
+}
+```
+
+The `title` field contains the error category (e.g. `"Bad Request"`, `"Unauthorized"`, `"Not Found"`) and `detail` provides a human-readable description of what went wrong.
+
+## Authentication at a Glance
+
+Most NSN endpoints require you to be authenticated. After signing up or signing in you receive a JWT access token. Include it in every protected request using the standard `Authorization` header:
+
+```
+Authorization: Bearer <your_access_token>
+```
+
+See the [Authentication](/authentication) page for full details on obtaining and refreshing tokens.

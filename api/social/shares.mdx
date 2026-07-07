@@ -1,0 +1,164 @@
+---
+title: "Shares API — Share and Unshare Posts in NSN"
+sidebarTitle: "Shares"
+description: "Reference for NSN share endpoints. Share a post to your feed with an optional comment, or remove a share with the unshare endpoint."
+---
+
+The Shares API lets you amplify posts on NSN by sharing them to your own feed. When you share a post, you can include an optional short comment of up to 280 characters to add context for your followers. Shares can be removed at any time using the unshare endpoint, which performs a soft delete — the share record is marked as deleted and disappears from your feed without permanently erasing the underlying data. Each share record is assigned a unique UUID that you will need to reference when calling the unshare endpoint.
+
+---
+
+## Endpoints
+
+<Accordion title="POST /{user}/{post}/share — Share a Post">
+
+Creates a share record that republishes the specified post to the authenticated user's feed. You may optionally include a short comment alongside the share.
+
+**Endpoint**
+
+```
+POST /{user}/{post}/share
+```
+
+**Authentication:** Required
+
+### Path Parameters
+
+<ParamField path="user" type="string" required>
+  The UUID of the authenticated user sharing the post.
+</ParamField>
+
+<ParamField path="post" type="string" required>
+  The UUID of the post you want to share.
+</ParamField>
+
+### Request Body
+
+<ParamField body="comment" type="string">
+  An optional message to accompany the shared post, visible to your followers. Maximum 280 characters.
+</ParamField>
+
+### Example Request — Share with a Comment
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/share \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comment": "Everyone should read this — really insightful take."
+  }'
+```
+
+### Example Request — Share without a Comment
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/share \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### Example Response
+
+```json
+{
+  "message": "Post shared successfully."
+}
+```
+
+<Tip>
+  To retrieve the share ID you will need for the unshare endpoint, fetch your profile's list of shares after creating this record. Store the returned `id` value so you can reference it later.
+</Tip>
+
+### Error Responses
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | A share-specific validation error occurred (for example, the post is not shareable). |
+| `401 Unauthorized` | Missing or invalid authentication token. |
+| `500 Internal Server Error` | An unexpected server-side error occurred. |
+
+</Accordion>
+
+---
+
+<Accordion title="PUT /{user}/{share}/unshare — Unshare a Post">
+
+Removes a previously created share from your feed. This operation is a soft delete — the share's `deleted_at` timestamp is set to the current time and the record is hidden from your feed. The original post remains unaffected.
+
+**Endpoint**
+
+```
+PUT /{user}/{share}/unshare
+```
+
+**Authentication:** Required
+
+<Note>
+  Unsharing is a soft delete. The `post_share` record is not permanently removed from the database — its `deleted_at` field is populated instead, and the share will no longer appear in feed results. This means the action is recorded but cannot currently be reversed through the API.
+</Note>
+
+### Path Parameters
+
+<ParamField path="user" type="string" required>
+  The UUID of the authenticated user who owns the share.
+</ParamField>
+
+<ParamField path="share" type="string" required>
+  The UUID of the share record to remove. This is the `id` returned when the share was created, not the post's UUID.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X PUT https://api.nsn.social/USER_ID/SHARE_ID/unshare \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "message": "Post unshared successfully."
+}
+```
+
+### Error Responses
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | A share-specific error occurred (for example, the share record does not belong to this user, or is already unshared). |
+| `401 Unauthorized` | Missing or invalid authentication token. |
+| `500 Internal Server Error` | An unexpected server-side error occurred. |
+
+</Accordion>
+
+---
+
+## Share Model Reference
+
+Every share record stored in the `post_share` table contains the following fields:
+
+<ResponseField name="id" type="string (UUID)">
+  The unique identifier of the share record. Use this value as `{share}` in the unshare endpoint.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who created the share.
+</ResponseField>
+
+<ResponseField name="post_id" type="string (UUID)">
+  The UUID of the original post that was shared.
+</ResponseField>
+
+<ResponseField name="comment" type="string | null">
+  The optional message attached to the share. `null` if no comment was provided. Maximum 280 characters.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (ISO 8601)">
+  The UTC timestamp of when the share was created.
+</ResponseField>
+
+<ResponseField name="deleted_at" type="string (ISO 8601) | null">
+  The UTC timestamp of when the share was unshared. `null` if the share is still active.
+</ResponseField>

@@ -1,0 +1,183 @@
+---
+title: "Likes API — Like and Dislike Content in NSN"
+sidebarTitle: "Likes"
+description: "Reference for NSN like endpoints. Like or dislike posts and comments using POST requests with user, post, and comment IDs in the path."
+---
+
+The Likes API lets you express a reaction to content across NSN. Both posts and comments use the same two endpoints — `like` and `dislike` — with a consistent path structure that includes a `user`, `post`, and `comment` segment. Because the underlying model tracks a `content_id` and `content_type` (`"post"` or `"comment"`), the API enforces uniqueness so you can only like a given piece of content once. The `dislike` endpoint removes an existing like, functioning as an unlike action.
+
+---
+
+## Understanding the Path Structure
+
+Both like endpoints share the route pattern:
+
+```
+/{user}/{post}/{comment}/like
+/{user}/{post}/{comment}/dislike
+```
+
+The `{comment}` segment serves a dual purpose:
+
+- **Liking a comment:** Pass the UUID of the specific comment you want to react to in `{comment}`, and the UUID of the post that comment belongs to in `{post}`.
+- **Liking a post directly:** Pass the UUID of the post in both `{post}` and `{comment}`. The API maps the `{comment}` value to the `content_id` field internally and records `content_type` as `"post"`.
+
+<Note>
+  The uniqueness constraint on the `like` table (`user_id`, `content_id`, `content_type`) ensures you cannot like the same post or comment more than once. Attempting to do so returns a `400 Bad Request` error.
+</Note>
+
+---
+
+## Endpoints
+
+<Accordion title="POST /{user}/{post}/{comment}/like — Like Content">
+
+Registers a like from the specified user on a post or comment. Each user may like any given piece of content only once.
+
+**Endpoint**
+
+```
+POST /{user}/{post}/{comment}/like
+```
+
+**Authentication:** Required
+
+### Path Parameters
+
+<ParamField path="user" type="string" required>
+  The UUID of the authenticated user submitting the like.
+</ParamField>
+
+<ParamField path="post" type="string" required>
+  The UUID of the post that contains the target content. When liking a post directly, this is the post's UUID.
+</ParamField>
+
+<ParamField path="comment" type="string" required>
+  The UUID of the content to like. Pass the comment UUID to like a comment, or the post UUID again to like a post directly.
+</ParamField>
+
+### Request Body
+
+This endpoint does not require a request body.
+
+### Example Request — Liking a Comment
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/COMMENT_ID/like \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Example Request — Liking a Post Directly
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/POST_ID/like \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "message": "Like"
+}
+```
+
+### Error Responses
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | You have already liked this content. |
+| `401 Unauthorized` | Missing or invalid authentication token. |
+| `500 Internal Server Error` | An unexpected server-side error occurred. |
+
+</Accordion>
+
+---
+
+<Accordion title="POST /{user}/{post}/{comment}/dislike — Dislike (Unlike) Content">
+
+Removes an existing like from the specified content. This endpoint acts as an unlike — it is not a negative reaction, but a reversal of a previously registered like. If no like exists for the given user and content, a `400 Bad Request` is returned.
+
+**Endpoint**
+
+```
+POST /{user}/{post}/{comment}/dislike
+```
+
+**Authentication:** Required
+
+### Path Parameters
+
+<ParamField path="user" type="string" required>
+  The UUID of the authenticated user removing the like.
+</ParamField>
+
+<ParamField path="post" type="string" required>
+  The UUID of the post that contains the target content.
+</ParamField>
+
+<ParamField path="comment" type="string" required>
+  The UUID of the content to unlike. Use the comment UUID for a comment, or the post UUID to unlike a post.
+</ParamField>
+
+### Request Body
+
+This endpoint does not require a request body.
+
+### Example Request — Unliking a Comment
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/COMMENT_ID/dislike \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Example Request — Unliking a Post
+
+```bash
+curl -X POST https://api.nsn.social/USER_ID/POST_ID/POST_ID/dislike \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "message": "Dislike"
+}
+```
+
+### Error Responses
+
+| Status | Description |
+|--------|-------------|
+| `400 Bad Request` | No existing like was found to remove for this user and content. |
+| `401 Unauthorized` | Missing or invalid authentication token. |
+| `500 Internal Server Error` | An unexpected server-side error occurred. |
+
+</Accordion>
+
+---
+
+## Like Model Reference
+
+The like record created by these endpoints includes the following fields:
+
+<ResponseField name="id" type="string (UUID)">
+  The unique identifier of the like record, auto-generated by the server.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who submitted the like.
+</ResponseField>
+
+<ResponseField name="content_id" type="string (UUID)">
+  The UUID of the content that was liked (a post or comment ID).
+</ResponseField>
+
+<ResponseField name="content_type" type="string">
+  Either `"post"` or `"comment"`, determined by the API based on the path values provided.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (ISO 8601)">
+  The UTC timestamp of when the like was recorded.
+</ResponseField>

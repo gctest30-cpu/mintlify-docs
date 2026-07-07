@@ -1,0 +1,182 @@
+---
+title: "Posts, Media, and Hashtags in NSN"
+sidebarTitle: "Posts"
+description: "Learn how posts work in NSN — content limits, media attachments, hashtags, visibility settings, and how posts are structured in the API."
+---
+
+Posts are the primary unit of content in NSN. When a user wants to share something — a thought, a photo, a video, or a link — they create a post. Every post belongs to exactly one user, can carry optional media attachments, can be tagged with hashtags for discoverability, and exposes a visibility setting that controls its audience. Understanding the post structure will help you build rich content experiences on top of the NSN API.
+
+## Post Structure
+
+A post is composed of a handful of core fields. Only `content` is strictly required; everything else is optional.
+
+<ResponseField name="id" type="string (UUID)" required>
+  The unique identifier for this post. Used to reference the post in likes, comments, shares, and notifications.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)" required>
+  The UUID of the user who created this post.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  An optional short title for the post. Maximum **128 characters**. Useful for long-form or article-style posts where a headline adds context.
+</ResponseField>
+
+<ResponseField name="content" type="string" required>
+  The main body text of the post. Maximum **1024 characters**. This field is always present on every post.
+</ResponseField>
+
+<ResponseField name="visibility" type="string" required>
+  Controls who can see this post. See [Visibility](#visibility) below for the available values.
+</ResponseField>
+
+<ResponseField name="hashtags" type="array">
+  A list of hashtag objects associated with this post. Each hashtag is unique per post — the same tag cannot be applied twice to the same post. See [Hashtags](#hashtags) below.
+</ResponseField>
+
+<ResponseField name="media" type="array">
+  An ordered list of media attachments (images or videos). See [Media Attachments](#media-attachments) below for the full field reference.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  The UTC timestamp of when the post was published. Timezone-aware ISO 8601 format.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string (timestamp)">
+  The UTC timestamp of the most recent edit to this post. `null` if the post has never been edited.
+</ResponseField>
+
+<Note>
+  Posts support soft deletion — a deleted post is not immediately removed from the system. If your application retrieves a post and receives a `404`, the post may have been deleted or its visibility may prevent you from accessing it.
+</Note>
+
+## Media Attachments
+
+A post can include zero or more media attachments. Attachments are ordered by their `position` field, so you can render them in the correct sequence. NSN supports two media types: **images** and **videos**.
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this media item.
+</ResponseField>
+
+<ResponseField name="media_type" type="string" required>
+  The kind of media. One of:
+  - `"image"` — a static image
+  - `"video"` — a video file
+</ResponseField>
+
+<ResponseField name="url" type="string (URL)" required>
+  The direct URL to the media file.
+</ResponseField>
+
+<ResponseField name="thumbnail_url" type="string (URL)">
+  A URL to a smaller preview/thumbnail version of the media. Particularly useful for videos — this is the still frame shown before playback begins.
+</ResponseField>
+
+<ResponseField name="position" type="integer">
+  The zero-based display order of this attachment within the post. Use this to render media in the correct sequence when a post has multiple attachments.
+</ResponseField>
+
+<ResponseField name="content_type" type="string">
+  The MIME type of the media file (e.g. `image/jpeg`, `image/png`, `video/mp4`). Use this to choose the right renderer or decoder in your client.
+</ResponseField>
+
+<ResponseField name="width" type="integer">
+  Width of the media in pixels.
+</ResponseField>
+
+<ResponseField name="height" type="integer">
+  Height of the media in pixels.
+</ResponseField>
+
+<ResponseField name="duration" type="integer">
+  **Videos only.** Duration of the video in **seconds**.
+</ResponseField>
+
+<ResponseField name="size" type="integer">
+  File size in **bytes**.
+</ResponseField>
+
+<Expandable title="Example media object — image">
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "media_type": "image",
+  "url": "https://cdn.nsn.example/media/photo.jpg",
+  "thumbnail_url": "https://cdn.nsn.example/media/photo_thumb.jpg",
+  "position": 0,
+  "content_type": "image/jpeg",
+  "width": 1920,
+  "height": 1080,
+  "duration": null,
+  "size": 204800
+}
+```
+</Expandable>
+
+<Expandable title="Example media object — video">
+```json
+{
+  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "media_type": "video",
+  "url": "https://cdn.nsn.example/media/clip.mp4",
+  "thumbnail_url": "https://cdn.nsn.example/media/clip_poster.jpg",
+  "position": 0,
+  "content_type": "video/mp4",
+  "width": 1280,
+  "height": 720,
+  "duration": 47,
+  "size": 10485760
+}
+```
+</Expandable>
+
+## Hashtags
+
+Any post can be tagged with one or more hashtags to help users discover related content. Hashtags behave like labels — you attach them by name when creating or editing a post.
+
+Key behaviors to know:
+
+- **Unique per post** — you cannot attach the same hashtag to the same post more than once. Duplicate entries are rejected.
+- **Multiple hashtags** — a single post can carry multiple different hashtags.
+- **Discoverable** — users and clients can query posts by hashtag to build topic feeds.
+
+```json
+// Example post body with hashtags
+{
+  "content": "Golden hour today was incredible.",
+  "hashtags": ["photography", "goldenhour", "nature"]
+}
+```
+
+<Tip>
+  Hashtag strings should not include the `#` symbol when sent to the API — submit just the word (e.g. `"photography"`, not `"#photography"`).
+</Tip>
+
+## Visibility
+
+The `visibility` field on a post determines who can see it. You set this when creating a post and can update it later.
+
+| Value | Description |
+|---|---|
+| `"public"` | Visible to everyone, including unauthenticated users |
+| `"friends"` | Visible only to users you follow or are connected with |
+| `"private"` | Visible only to you |
+
+<Note>
+  The API enforces visibility when returning posts — if you request a post that the authenticated user is not permitted to see, the API will return a `404` rather than a `403` to avoid leaking the existence of private content.
+</Note>
+
+## Post Lifecycle
+
+Every post moves through a simple lifecycle:
+
+1. **Created** — `created_at` is set; `updated_at` is `null`.
+2. **Edited** — `updated_at` is set to the timestamp of the most recent change. `created_at` never changes.
+3. **Deleted** — the post is soft-deleted. It is no longer returned in feeds or search results, but your application should handle `404` responses gracefully rather than assuming a post ID is permanently invalid.
+
+```
+Created → [optional edits] → Deleted
+  ↑                              ↑
+created_at set             soft deletion;
+                           post disappears from API
+```

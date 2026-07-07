@@ -1,0 +1,186 @@
+---
+title: "Register an Account and Log In to NSN"
+sidebarTitle: "Register & Log In"
+description: "Step-by-step guide to creating an NSN user account and signing in to obtain JWT tokens for authenticating API requests."
+---
+
+Before you can create posts, interact with other users, or access any protected resource, you need an NSN account and a valid JWT access token. This guide walks you through registering a new account, storing your tokens, verifying your identity, and signing back in whenever your session expires.
+
+<Steps>
+
+  <Step title="Choose your identifier">
+    NSN lets you register with a **username**, an **email address**, or **both**. You must supply at least one of the two — the same identifier you register with is what you will use to sign in later.
+
+    | Identifier | Format | Required? |
+    |---|---|---|
+    | `username` | 3–16 characters, letters, numbers, and underscores only | At least one of the two |
+    | `email` | Standard email address format | At least one of the two |
+
+    If you provide both at registration, you can sign in with either one going forward. Choose a combination that makes sense for your integration — username-only accounts are common for bots and service accounts, while email-only accounts suit user-facing applications that use email as the primary identity.
+  </Step>
+
+  <Step title="Register with POST /signup">
+    Send a `POST` request to `/signup` with your chosen identifier(s), a password, your full name, and your date of birth.
+
+    ```bash
+    curl -X POST http://localhost:8000/signup \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alice_dev",
+        "email": "alice@example.com",
+        "password": "s3cur3P@ss",
+        "full_name": "Alice Smith",
+        "birth_date": "1995-06-15"
+      }'
+    ```
+
+    A successful registration returns HTTP `200` with your new user ID and four token fields:
+
+    ```json
+    {
+      "type": "User",
+      "count": 1,
+      "attributes": {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      },
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "access_exp": "2024-09-01T12:00:00",
+      "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
+      "refresh_exp": "2024-09-08T12:00:00"
+    }
+    ```
+
+    Save `attributes.id` — this is your **User ID (UUID)** and is used as the `{user_id}` path parameter in every subsequent request.
+
+    <Warning>
+      Both `username` and `email` must be unique across NSN. If either value is already registered, the API returns a `400 Bad Request` — see the error handling section below.
+    </Warning>
+  </Step>
+
+  <Step title="Store your tokens">
+    The response contains two tokens you need to hold on to:
+
+    | Field | Purpose | Lifetime |
+    |---|---|---|
+    | `access_token` | Authenticates individual API requests | Short (see `access_exp`) |
+    | `refresh_token` | Used to obtain a new access token when the current one expires | Long (see `refresh_exp`) |
+
+    Pass the `access_token` as a **Bearer token** in the `Authorization` header of every authenticated request:
+
+    ```
+    Authorization: Bearer YOUR_ACCESS_TOKEN
+    ```
+
+    <Tip>
+      Store your `refresh_token` securely — for example in an encrypted keychain or secure storage rather than a plain environment variable. When your `access_token` expires (check `access_exp`), you can use the `refresh_token` to re-authenticate without asking the user for their password again.
+    </Tip>
+  </Step>
+
+  <Step title="Verify your login with GET /user">
+    Confirm that your token is working by calling the `GET /user` endpoint. This returns the display name and avatar URL for the authenticated user.
+
+    ```bash
+    curl -X GET http://localhost:8000/user \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+    ```
+
+    Expected response:
+
+    ```json
+    {
+      "name": "Alice Smith",
+      "avatar": "https://cdn.nsn.example/avatars/3fa85f64.png"
+    }
+    ```
+
+    If the token is missing or invalid, you will receive a `401 Unauthorized` response. Double-check that you copied the full token string without any trailing whitespace.
+  </Step>
+
+  <Step title="Sign in again later with POST /signin">
+    When your `access_token` expires, sign in again to receive a fresh pair of tokens. You can authenticate with either your username or your email — whichever you prefer.
+
+    **Sign in with username:**
+
+    ```bash
+    curl -X POST http://localhost:8000/signin \
+      -H "Content-Type: application/json" \
+      -d '{
+        "username": "alice_dev",
+        "password": "s3cur3P@ss"
+      }'
+    ```
+
+    **Sign in with email:**
+
+    ```bash
+    curl -X POST http://localhost:8000/signin \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "alice@example.com",
+        "password": "s3cur3P@ss"
+      }'
+    ```
+
+    Both requests return the same token structure as `/signup`:
+
+    ```json
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "access_exp": "2024-09-01T14:00:00",
+      "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
+      "refresh_exp": "2024-09-08T14:00:00"
+    }
+    ```
+
+    Replace your stored tokens with the new values and continue making authenticated requests as normal.
+  </Step>
+
+</Steps>
+
+## Validation rules
+
+<Note>
+  The following constraints are enforced by the API at registration time. Requests that violate these rules return `400 Bad Request` with a descriptive error message.
+
+  | Field | Rule |
+  |---|---|
+  | `username` | 3–16 characters; only letters (`a-z`, `A-Z`), digits (`0-9`), and underscores (`_`) |
+  | `password` | 6–64 characters |
+  | `full_name` | Letters and spaces only; maximum 32 characters |
+  | `birth_date` | ISO 8601 date string in `YYYY-MM-DD` format (e.g. `"1995-06-15"`) |
+  | `email` or `username` | At least one must be provided |
+</Note>
+
+## Error reference
+
+### Username or email already taken
+
+If the username or email you chose is already registered, the API returns a `400 Bad Request`:
+
+```json
+{
+  "detail": "That username is already in use. Please try a different one."
+}
+```
+
+or, for a duplicate email:
+
+```json
+{
+  "detail": "That email is already in use. Please try a different one."
+}
+```
+
+Choose a different value and retry the `/signup` request.
+
+### Invalid credentials on sign-in
+
+If the password does not match the stored credentials, you will receive a `401 Unauthorized`:
+
+```json
+{
+  "detail": "Invalid credentials"
+}
+```
+
+Check that you are using the same identifier (username or email) and password you registered with.

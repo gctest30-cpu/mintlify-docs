@@ -1,0 +1,155 @@
+---
+title: "Create and Manage Posts with the NSN API"
+sidebarTitle: "Creating Posts"
+description: "Learn how to create, update, retrieve, and delete posts in NSN using the REST API with authenticated requests."
+---
+
+Posts are the primary unit of content in NSN. Once you have a valid access token and know your User ID, you can create posts, retrieve your post history, make edits, and remove content — all through simple REST calls. Every write operation on posts requires an `Authorization` header containing your Bearer token.
+
+<Note>
+  All post endpoints include your **User ID** (`{USER_ID}`) as a path parameter. You can find your User ID in the `attributes.id` field of the `/signup` response, or by calling `GET /user` after signing in. It is a UUID string in the format `3fa85f64-5717-4562-b3fc-2c963f66afa6`.
+</Note>
+
+<Steps>
+
+  <Step title="Create a post">
+    Send a `POST` request to `/{USER_ID}/new-post` with a JSON body containing your post content and visibility setting. The `title` field is optional — you can publish a post with content alone.
+
+    ```bash
+    curl -X POST http://localhost:8000/{USER_ID}/new-post \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "title": "My first post",
+        "content": "Hello, NSN! Excited to share my first update.",
+        "visibility": "public"
+      }'
+    ```
+
+    Replace `{USER_ID}` with your actual UUID (e.g. `3fa85f64-5717-4562-b3fc-2c963f66afa6`).
+
+    **Request body fields:**
+
+    | Field | Type | Required | Description |
+    |---|---|---|---|
+    | `title` | string | No | A short headline for the post. Maximum 128 characters. |
+    | `content` | string | Yes | The body text of your post. Maximum 1024 characters. |
+    | `visibility` | string | Yes | Who can see the post. See [Visibility options](#visibility-options) below. |
+
+    **Successful response (`201 Created`):**
+
+    ```json
+    {
+      "message": "Post created successfully."
+    }
+    ```
+
+    <Note>
+      The creation endpoint does not return the new post ID directly. To retrieve the ID of a post you just created, call `GET /{USER_ID}/find-post` immediately after and inspect the most recent entry.
+    </Note>
+  </Step>
+
+  <Step title="Retrieve your posts">
+    Fetch the full list of posts belonging to your account with a `GET` request to `/{USER_ID}/find-post`. No request body is required.
+
+    ```bash
+    curl -X GET http://localhost:8000/{USER_ID}/find-post \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+    ```
+
+    **Successful response (`200 OK`):**
+
+    ```json
+    [
+      {
+        "title": "My first post",
+        "content": "Hello, NSN! Excited to share my first update.",
+        "created_at": "2024-09-01T10:30:00",
+        "updated_at": "2024-09-01T10:30:00"
+      },
+      {
+        "title": null,
+        "content": "Just a quick thought — no title needed.",
+        "created_at": "2024-09-01T11:45:00",
+        "updated_at": "2024-09-01T11:45:00"
+      }
+    ]
+    ```
+
+    The array is ordered by creation time. Use the `created_at` timestamp to identify a specific post when you need to reference it for edits or deletion.
+  </Step>
+
+  <Step title="Edit a post">
+    Update an existing post by sending a `PUT` request to `/{USER_ID}/{POST_ID}/edit-post`. All body fields are optional — include only the fields you want to change.
+
+    ```bash
+    curl -X PUT http://localhost:8000/{USER_ID}/{POST_ID}/edit-post \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "title": "My first post (updated)",
+        "content": "Hello, NSN! I have updated this post with more detail.",
+        "visibility": "friends"
+      }'
+    ```
+
+    Replace `{POST_ID}` with the UUID of the post you want to edit.
+
+    **Editable fields:**
+
+    | Field | Type | Description |
+    |---|---|---|
+    | `title` | string | New title. Maximum 128 characters. Omit to leave unchanged. |
+    | `content` | string | New body text. Maximum 1024 characters. Omit to leave unchanged. |
+    | `visibility` | string | New visibility setting. Omit to leave unchanged. |
+
+    **Successful response:**
+
+    ```json
+    {
+      "message": "Post edited successfully."
+    }
+    ```
+  </Step>
+
+  <Step title="Delete a post">
+    Permanently remove a post by sending a `DELETE` request to `/{USER_ID}/{POST_ID}/delete-post`. This action cannot be undone.
+
+    ```bash
+    curl -X DELETE http://localhost:8000/{USER_ID}/{POST_ID}/delete-post \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+    ```
+
+    **Successful response (`201`):**
+
+    ```json
+    {
+      "message": "Post deleted successfully."
+    }
+    ```
+
+    <Warning>
+      Deleting a post is a soft-delete operation on the server side, but from the API consumer's perspective the post will no longer appear in `GET /{USER_ID}/find-post` and all associated comments and shares will become inaccessible. Make sure you intend to permanently remove the content before sending this request.
+    </Warning>
+  </Step>
+
+</Steps>
+
+## Visibility options
+
+The `visibility` field controls who can see your post. The following values are supported:
+
+| Value | Who can see the post |
+|---|---|
+| `"public"` | Anyone on NSN |
+| `"friends"` | Only users you are connected with |
+| `"private"` | Only you |
+
+Always include `visibility` when creating a post. If you are unsure, start with `"public"` and update it later using the edit endpoint.
+
+## Content limits
+
+<Note>
+  - **Title:** optional, maximum **128 characters**. Titles are intended as short headlines — keep them concise and descriptive.
+  - **Content:** required, maximum **1024 characters**. This is the main body of your post. Markdown formatting is not currently processed by the API, so content is stored and returned as plain text.
+</Note>

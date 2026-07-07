@@ -1,0 +1,87 @@
+---
+title: "GET /search-by-name — Search NSN Users by Name"
+sidebarTitle: "GET /search-by-name"
+description: "GET /search-by-name searches for NSN users by full name. Returns a list of matching users with their IDs and avatar URLs."
+---
+
+Use this endpoint to search for NSN users by their full name. Pass a name string as the `name` query parameter and the API returns a list of matching user profiles, each including a unique ID, full name, and avatar URL. This endpoint does not require authentication, making it suitable for public-facing search experiences such as friend finders or user directories. Note that the `name` query must contain only letters and spaces (no digits or special characters) and must not exceed 32 characters.
+
+## Endpoint
+
+```
+GET /search-by-name
+```
+
+## Query Parameters
+
+<ParamField query="name" type="string" required>
+  The name to search for. Must contain **letters and spaces only** — no digits, punctuation, or special characters. Maximum **32 characters**. The search matches against users' full names registered on NSN.
+</ParamField>
+
+## Request Example
+
+```bash
+curl -X GET "https://api.nsn.social/search-by-name?name=Alice%20Nguyen"
+```
+
+## Response Fields
+
+<ResponseField name="type" type="string">
+  The type of objects returned. This value is always `"User"` for this endpoint.
+</ResponseField>
+
+<ResponseField name="count" type="integer">
+  The total number of matching users returned in this response.
+</ResponseField>
+
+<ResponseField name="attributes" type="array">
+  An array of user objects matching the search query.
+
+  <Expandable title="attributes item fields">
+    <ResponseField name="id" type="string (UUID)">
+      The unique identifier of the user, formatted as a UUID (e.g. `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"`). Use this value to reference the user in other NSN API calls.
+    </ResponseField>
+
+    <ResponseField name="full_name" type="string">
+      The full name of the matched user as registered on NSN.
+    </ResponseField>
+
+    <ResponseField name="avatar" type="string | null">
+      The URL of the user's avatar image. Returns `null` if the user has not yet set a profile picture.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "type": "User",
+  "count": 2,
+  "attributes": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "full_name": "Alice Nguyen",
+      "avatar": "https://cdn.nsn.social/avatars/a1b2c3d4-e5f6-7890-abcd-ef1234567890.jpg"
+    },
+    {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f01234567891",
+      "full_name": "Alice Nakamura",
+      "avatar": null
+    }
+  ]
+}
+```
+
+## Error Cases
+
+| HTTP Status | Cause |
+|-------------|-------|
+| `400 Bad Request` | `name` query parameter is missing |
+| `400 Bad Request` | `name` contains digits, punctuation, or special characters |
+| `400 Bad Request` | `name` exceeds 32 characters |
+| `400 Bad Request` | No users were found matching the provided name |
+
+<Tip>
+  The `id` field in each result is a UUID that uniquely identifies a user across NSN. You can use it with other API endpoints — for example, to send a friend request, view a user's posts, or tag them in content. Store it locally whenever you need to reference a specific user in follow-up calls.
+</Tip>

@@ -1,0 +1,117 @@
+---
+title: "NSN REST API Overview and Conventions"
+sidebarTitle: "Overview"
+description: "Learn the NSN API base URL, authentication method, request format, response conventions, and how to verify the API is reachable."
+---
+
+The NSN (New Social Network) API is a RESTful HTTP API that lets you build social networking features into your application. You can use it to register and authenticate users, search for people by name, create and manage posts, share content, leave comments, and more. Every request and response uses JSON, and all endpoints are served from a single base URL. This page covers the conventions you need to know before making your first request.
+
+## Base URL
+
+All API endpoints are relative to the following base URL:
+
+```
+http://localhost:8000
+```
+
+When you deploy NSN to a remote server, replace `localhost:8000` with your host and port. Every path in this documentation is expressed relative to the base URL — for example, `POST /signup` means `POST http://localhost:8000/signup`.
+
+<Note>
+  NSN does not currently enforce HTTPS at the application layer. For production deployments, place the server behind a reverse proxy (such as Nginx or Caddy) that terminates TLS.
+</Note>
+
+## Authentication
+
+Protected endpoints require a JSON Web Token (JWT) passed as a Bearer token in the `Authorization` header.
+
+```http
+Authorization: Bearer <access_token>
+```
+
+You obtain an `access_token` by calling `POST /signin` with valid credentials. The token is short-lived; once it expires you will receive a `401 Unauthorized` response and will need to sign in again.
+
+<Warning>
+  Keep your access token private. Do not include it in URLs or log it to the console in production code.
+</Warning>
+
+## Request Format
+
+When sending a request body, encode it as JSON and set the `Content-Type` header accordingly:
+
+```http
+Content-Type: application/json
+```
+
+Query parameters (such as `name` on `GET /search-by-name`) are passed as standard URL query strings and do not require a `Content-Type` header.
+
+**Example request:**
+
+```bash
+curl -X POST http://localhost:8000/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ada@example.com",
+    "password": "s3cur3pass",
+    "full_name": "Ada Lovelace",
+    "birth_date": "1815-12-10"
+  }'
+```
+
+## Response Format
+
+Every response body is JSON, including error responses. Successful responses return data specific to the endpoint (see the individual endpoint reference pages). Error responses always follow the same envelope shape — see the [Errors](/api/errors) page for the full reference.
+
+HTTP status codes signal the outcome at a high level:
+
+| Status code | Meaning |
+|---|---|
+| `200 OK` | The request succeeded and a response body is returned. |
+| `201 Created` | A new resource was successfully created. |
+| `400 Bad Request` | The request was malformed or failed validation. |
+| `401 Unauthorized` | Authentication is missing, invalid, or expired. |
+| `422 Unprocessable Entity` | The request structure was understood but semantic validation failed. |
+| `500 Internal Server Error` | An unexpected error occurred on the server. |
+
+## CORS
+
+The NSN API has CORS fully open — it accepts requests from any origin (`*`), with any method and any headers. This means you can call the API directly from browser-based applications without a proxy during development.
+
+## Health Check
+
+Before integrating, verify that the server is reachable with the `/ping` endpoint. It requires no authentication and returns a plain confirmation string.
+
+**Request:**
+
+```bash
+curl http://localhost:8000/ping
+```
+
+**Response (`200 OK`):**
+
+```json
+"pong: its works"
+```
+
+If you receive a connection error instead, confirm the server is running and that the base URL is correct.
+
+## Rate Limiting & Pagination
+
+<Note>
+  Rate limiting and cursor/page-based pagination are not yet documented for the NSN API. If you are consuming endpoints that return lists of resources (such as `GET /search-by-name`), be mindful of response size and avoid polling in tight loops.
+</Note>
+
+## What's Next
+
+Now that you understand the conventions, explore the individual API reference sections:
+
+<CardGroup cols={3}>
+  <Card title="Errors" icon="circle-exclamation" href="/api/errors">
+    HTTP status codes and error response shapes.
+  </Card>
+  <Card title="Users" icon="user" href="/api/users">
+    Sign up, sign in, search for users, and retrieve profile info.
+  </Card>
+  <Card title="Posts" icon="pen-to-square" href="/api/posts">
+    Create, edit, delete, share, and comment on posts.
+  </Card>
+</CardGroup>

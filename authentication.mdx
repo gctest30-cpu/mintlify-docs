@@ -1,0 +1,217 @@
+---
+title: "Authenticate Requests to the NSN API"
+sidebarTitle: "Authentication"
+description: "NSN uses JWT Bearer tokens for authentication. Learn how to obtain tokens via signup or signin, pass them in requests, and handle token expiry."
+---
+
+NSN authenticates API requests using **JWT (JSON Web Token) Bearer tokens**. Every protected endpoint requires a valid access token attached to the request header. You obtain a token pair — an access token and a refresh token — either when you first create your account (`POST /signup`) or when you sign in to an existing account (`POST /signin`). There is no separate token-issuance step; authentication tokens are returned as part of both flows.
+
+---
+
+## Getting a Token
+
+You can get tokens in two ways: by creating a new account or by signing in to an existing one. Both endpoints return identical token response bodies.
+
+### Option 1 — Sign Up (New Account)
+
+`POST /signup` creates a new NSN user account and immediately returns your tokens. You must supply at least one of `email` or `username`, but you do not need both.
+
+#### Request Fields
+
+<ParamField body="email" type="string">
+  The user's email address. Required if `username` is not provided. Must be a valid email format.
+</ParamField>
+
+<ParamField body="username" type="string">
+  The user's chosen username. Required if `email` is not provided. Must be 3–16 characters long and contain only letters, numbers, and underscores (`a-z`, `A-Z`, `0-9`, `_`).
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The account password. Must be between 6 and 64 characters.
+</ParamField>
+
+<ParamField body="full_name" type="string" required>
+  The user's display name. Letters and spaces only, maximum 32 characters.
+</ParamField>
+
+<ParamField body="birth_date" type="string" required>
+  The user's date of birth in `YYYY-MM-DD` format (e.g. `1990-06-15`).
+</ParamField>
+
+```bash
+curl -X POST http://localhost:8000/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ada@example.com",
+    "username": "ada_dev",
+    "password": "superSecret9",
+    "full_name": "Ada Lovelace",
+    "birth_date": "1990-06-15"
+  }'
+```
+
+### Option 2 — Sign In (Existing Account)
+
+`POST /signin` authenticates an existing user and returns a fresh token pair. Supply either your `email` or `username` together with your `password`.
+
+#### Request Fields
+
+<ParamField body="email" type="string">
+  Your registered email address. Required if `username` is not provided.
+</ParamField>
+
+<ParamField body="username" type="string">
+  Your registered username. Required if `email` is not provided.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Your account password.
+</ParamField>
+
+```bash
+# Sign in with email
+curl -X POST http://localhost:8000/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "ada@example.com",
+    "password": "superSecret9"
+  }'
+
+# — or — sign in with username
+curl -X POST http://localhost:8000/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "ada_dev",
+    "password": "superSecret9"
+  }'
+```
+
+### Token Response
+
+Both `/signup` and `/signin` return the same four-field token object:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ...",
+  "access_exp": "2025-06-14T12:30:00.000000+00:00",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ...",
+  "refresh_exp": "2025-07-14T11:00:00.000000+00:00"
+}
+```
+
+<ResponseField name="access_token" type="string">
+  A signed JWT for authenticating API requests. Include this in the `Authorization` header of every protected call.
+</ResponseField>
+
+<ResponseField name="access_exp" type="string">
+  ISO 8601 UTC timestamp indicating when the `access_token` expires. After this time the token is rejected and you must sign in again.
+</ResponseField>
+
+<ResponseField name="refresh_token" type="string">
+  A longer-lived signed JWT. Store this securely alongside your `access_token`.
+</ResponseField>
+
+<ResponseField name="refresh_exp" type="string">
+  ISO 8601 UTC timestamp indicating when the `refresh_token` expires.
+</ResponseField>
+
+<Note>
+  The JWT payload contains two claims: `sub` (the user's unique ID) and `exp` (the expiry Unix timestamp). You can decode the token locally to inspect these values, but the server always performs authoritative verification on every request.
+</Note>
+
+---
+
+## Using Your Token
+
+Once you have an `access_token`, attach it to every protected request using the `Authorization` header with the `Bearer` scheme:
+
+```
+Authorization: Bearer <your_access_token>
+```
+
+Here's a complete example calling the `GET /user` endpoint:
+
+```bash
+curl http://localhost:8000/user \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ..."
+```
+
+<Warning>
+  Every protected endpoint requires the `Authorization: Bearer` header. Requests that omit this header or supply a malformed token will receive a `401 Unauthorized` response.
+</Warning>
+
+---
+
+## Token Expiry
+
+NSN issues two tokens with different lifetimes, suited to different purposes.
+
+| Token | Lifetime | Purpose |
+|---|---|---|
+| `access_token` | Short (configured in minutes) | Sent with every API request. |
+| `refresh_token` | Long (configured in days) | Held in secure storage; used to re-authenticate when the access token expires. |
+
+When your `access_token` expires:
+
+1. The API returns `401 Unauthorized` with the message `"Token expirado"`.
+2. Call `POST /signin` with your credentials to obtain a new token pair.
+3. Update your stored tokens and resume making requests.
+
+<Tip>
+  To avoid user-visible `401` errors, proactively check the `access_exp` timestamp before making a request. If the token expires within the next few minutes, sign in in the background and swap the token before it's rejected.
+</Tip>
+
+---
+
+## Common Authentication Errors
+
+The following errors relate specifically to authentication and are the ones you'll encounter most often while integrating.
+
+### 401 Unauthorized
+
+Returned when your access token is missing, expired, or invalid.
+
+```json
+{
+  "errors": {
+    "title": "Unauthorized",
+    "detail": "Token expirado"
+  }
+}
+```
+
+**How to fix:** Sign in again using `POST /signin` to get fresh tokens.
+
+### 400 Bad Request — Missing credentials
+
+Returned by `/signin` or `/signup` when required fields are absent.
+
+```json
+{
+  "errors": {
+    "title": "Bad Request",
+    "detail": "Email or username is required"
+  }
+}
+```
+
+**How to fix:** Ensure your request body includes at least one of `email` or `username`, and always includes `password`.
+
+### 400 Bad Request — Validation failure
+
+Returned when a field value violates the format rules (e.g. a username that's too short, or a password that's too long).
+
+```json
+{
+  "errors": {
+    "title": "Bad Request",
+    "detail": "Username too short"
+  }
+}
+```
+
+**How to fix:** Check the field rules listed in the [Request Fields](#option-1--sign-up-new-account) sections above and ensure your values meet all constraints before sending.
+
+<Note>
+  The `detail` field in every error response is a human-readable explanation you can surface directly to users or log for debugging.
+</Note>

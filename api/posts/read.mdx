@@ -1,0 +1,109 @@
+---
+title: "GET /{user_id}/find-post — Retrieve a User's Posts"
+sidebarTitle: "Get Posts"
+description: "GET /{user_id}/find-post retrieves all posts for a given user. Returns an array of posts with title, content, and timestamps."
+---
+
+Use this endpoint to fetch all active posts belonging to a specific user. The response is an array of post objects, each containing the post's title, content, and timestamps. Only posts that have not been soft-deleted are returned — deleted posts are automatically excluded from the results.
+
+## Endpoint
+
+```
+GET /{user_id}/find-post
+```
+
+## Authentication
+
+<Warning>
+  All requests to this endpoint must include a valid `Authorization: Bearer <token>` header. Requests without a valid token will receive a `401 Unauthorized` response.
+</Warning>
+
+## Path Parameters
+
+<ParamField path="user_id" type="string" required>
+  The UUID of the user whose posts you want to retrieve.
+
+  **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
+</ParamField>
+
+## Request Example
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.nsn.com/e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c/find-post" \
+  --header "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+```python Python
+import httpx
+
+USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+
+response = httpx.get(
+    f"https://api.nsn.com/{USER_ID}/find-post",
+    headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
+)
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response
+
+### 200 OK
+
+Returns an array of post objects. If the user has no posts, an empty array (`[]`) is returned.
+
+Each object in the array contains the following fields:
+
+<ResponseField name="title" type="string">
+  The optional title of the post. This field may be `null` if no title was provided when the post was created.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  The full text body of the post. Maximum length is 1024 characters.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  The ISO 8601 timestamp indicating when the post was originally created, including timezone information.
+
+  **Example:** `"2024-06-15T10:32:00+00:00"`
+</ResponseField>
+
+<ResponseField name="updated_at" type="string (timestamp) | null">
+  The ISO 8601 timestamp of the most recent edit to the post. Returns `null` if the post has never been edited.
+
+  **Example:** `"2024-06-16T08:15:42+00:00"`
+</ResponseField>
+
+### Response Example
+
+```json
+[
+  {
+    "title": "My first post",
+    "content": "Hello, NSN! Excited to be here and share what I have been working on.",
+    "created_at": "2024-06-15T10:32:00+00:00",
+    "updated_at": null
+  },
+  {
+    "title": null,
+    "content": "Just a quick thought to share with everyone today.",
+    "created_at": "2024-06-17T14:05:11+00:00",
+    "updated_at": "2024-06-17T15:20:33+00:00"
+  }
+]
+```
+
+## Error Responses
+
+| Status | Meaning | When it occurs |
+|--------|---------|----------------|
+| `401 Unauthorized` | Authentication failed | The `Authorization` header is missing or the token is invalid/expired |
+| `500 Internal Server Error` | Unexpected server error | An unhandled exception occurred while processing the request |
+
+<Note>
+  This endpoint only returns posts that are currently active. Any post that has been soft-deleted (via the `DELETE /{user_id}/{post_id}/delete-post` endpoint) will not appear in the results, even though the underlying data is still retained in the database.
+</Note>

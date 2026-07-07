@@ -1,0 +1,102 @@
+---
+title: "POST /{user_id}/new-post — Create a New Post"
+sidebarTitle: "Create Post"
+description: "POST /{user_id}/new-post creates a new post for the authenticated user. Accepts title, content, and visibility. Requires Bearer auth."
+---
+
+Use this endpoint to publish a new post on behalf of the authenticated user. You supply the post's content, an optional title, and a visibility level that controls which other users can see the post in their feeds. The `{user_id}` path parameter must match the identity encoded in your Bearer token — attempting to create a post for another user will be rejected.
+
+## Endpoint
+
+```
+POST /{user_id}/new-post
+```
+
+## Authentication
+
+<Warning>
+  All requests to this endpoint must include a valid `Authorization: Bearer <token>` header. Requests without a valid token will receive a `401 Unauthorized` response.
+</Warning>
+
+## Path Parameters
+
+<ParamField path="user_id" type="string" required>
+  The UUID of the authenticated user on whose behalf the post is being created. Must match the identity in your Bearer token.
+
+  **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
+</ParamField>
+
+## Request Body
+
+<ParamField body="content" type="string" required>
+  The main body text of the post. This field is required and cannot be empty. Maximum length is **1024 characters**.
+</ParamField>
+
+<ParamField body="visibility" type="string" required>
+  Controls who can see the post. Determines the audience for this post in feeds and search.
+
+  **Example values:** `"public"`, `"friends"`, `"private"`
+</ParamField>
+
+<ParamField body="title" type="string">
+  An optional short title for the post. Maximum length is **128 characters**. If omitted, the post is created without a title.
+</ParamField>
+
+## Request Example
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url "https://api.nsn.com/e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c/new-post" \
+  --header "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "title": "My first post",
+    "content": "Hello, NSN! Excited to be here and share what I have been working on.",
+    "visibility": "public"
+  }'
+```
+
+```python Python
+import httpx
+
+USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+
+response = httpx.post(
+    f"https://api.nsn.com/{USER_ID}/new-post",
+    headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
+    json={
+        "title": "My first post",
+        "content": "Hello, NSN! Excited to be here and share what I have been working on.",
+        "visibility": "public",
+    },
+)
+print(response.json())
+```
+
+</CodeGroup>
+
+## Response
+
+### 201 Created
+
+Returned when the post is successfully created.
+
+```json
+{
+  "message": "Post created successfully."
+}
+```
+
+## Error Responses
+
+| Status | Meaning | When it occurs |
+|--------|---------|----------------|
+| `400 Bad Request` | Missing or invalid fields | `content` is absent or exceeds 1024 characters; `visibility` is absent |
+| `401 Unauthorized` | Authentication failed | The `Authorization` header is missing or the token is invalid/expired |
+| `500 Internal Server Error` | Unexpected server error | An unhandled exception occurred while processing the request |
+
+<Tip>
+  Keep your post content under 1024 characters. If you need to share longer material, consider splitting it across multiple posts or linking to an external resource.
+</Tip>

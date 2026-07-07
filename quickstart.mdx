@@ -1,47 +1,119 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with the NSN API in Minutes"
+sidebarTitle: "Quick Start"
+description: "Learn how to create an NSN account, get your JWT token, and make your first authenticated API call in under five minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This guide walks you through the fastest path to a working NSN integration: create an account, receive your JWT tokens, call a protected endpoint, and search for other users. By the end you'll have a complete request-response loop running against the NSN API.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+
+  <Step title="Sign up for an account">
+    Send a `POST /signup` request with your credentials and personal details. You need to supply at least one of `email` or `username` — you do not have to provide both.
 
     ```bash
-    npm install your-package
+    curl -X POST http://localhost:8000/signup \
+      -H "Content-Type: application/json" \
+      -d '{
+        "email": "ada@example.com",
+        "username": "ada_dev",
+        "password": "superSecret9",
+        "full_name": "Ada Lovelace",
+        "birth_date": "1990-06-15"
+      }'
     ```
+
+    A successful signup returns four token fields you'll use for every subsequent request:
+
+    ```json
+    {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ...",
+      "access_exp": "2025-06-14T12:30:00.000000+00:00",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ...",
+      "refresh_exp": "2025-07-14T11:00:00.000000+00:00"
+    }
+    ```
+
+    | Field | Description |
+    |---|---|
+    | `access_token` | Short-lived JWT for authenticating API requests. |
+    | `access_exp` | ISO 8601 timestamp when the access token expires. |
+    | `refresh_token` | Longer-lived JWT used to obtain new access tokens. |
+    | `refresh_exp` | ISO 8601 timestamp when the refresh token expires. |
+
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+
+  <Step title="Save your access token">
+    Copy the `access_token` value from the response and store it somewhere your client can reference — for example, an environment variable or a secure local store.
 
     ```bash
-    your-cli init
+    # Example: store in a shell variable for the rest of this guide
+    ACCESS_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNGYwYWJjZ..."
     ```
+
+    <Tip>
+      The `access_exp` timestamp tells you exactly when your token expires. Save it alongside your token so your application knows when to sign in again and fetch fresh tokens — rather than waiting for a `401` response.
+    </Tip>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Make your first authenticated call">
+    Use `GET /user` to verify your token is working. This endpoint decodes your JWT and returns your profile's display name and avatar URL.
 
     ```bash
-    your-cli start
+    curl http://localhost:8000/user \
+      -H "Authorization: Bearer $ACCESS_TOKEN"
     ```
+
+    Expected response:
+
+    ```json
+    {
+      "name": "Ada Lovelace",
+      "avatar": "https://cdn.example.com/avatars/ada_dev.png"
+    }
+    ```
+
+    If your token is missing or expired, the API returns a `401 Unauthorized` error. In that case, sign in again using `POST /signin` (see the [Authentication](/authentication) guide) to get a fresh access token.
   </Step>
+
+  <Step title="Search for other users">
+    Once authenticated, you can discover other users on the network with `GET /search-by-name`. Pass the `name` query parameter to perform a name-based search.
+
+    ```bash
+    curl "http://localhost:8000/search-by-name?name=John" \
+      -H "Authorization: Bearer $ACCESS_TOKEN"
+    ```
+
+    The endpoint returns a list of matching user profiles:
+
+    ```json
+    {
+      "type": "users",
+      "count": 2,
+      "attributes": [
+        {
+          "id": "d4f0abcf-1234-5678-abcd-ef0123456789",
+          "full_name": "John Doe",
+          "avatar": "https://cdn.example.com/avatars/johndoe.png"
+        },
+        {
+          "id": "a1b2c3d4-9876-5432-dcba-fedcba987654",
+          "full_name": "Johnny Appleseed",
+          "avatar": null
+        }
+      ]
+    }
+    ```
+
+    Use the returned `id` values to reference users in other API calls, such as sending a direct message or adding a friend.
+  </Step>
+
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Next Steps
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+You now have a working token and know how to call authenticated endpoints. Here is where to go next:
+
+- **[Authentication](/authentication)** — Understand token expiry, the signin flow, and how to handle `401` errors gracefully.
+- **[API Reference](/api/overview)** — Explore every available endpoint and its full parameter and response documentation.
+- **[Guides](/guides/register-and-login)** — Follow practical, scenario-based walkthroughs for common NSN workflows.

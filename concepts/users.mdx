@@ -1,0 +1,120 @@
+---
+title: "Users and Profiles in NSN"
+sidebarTitle: "Users"
+description: "Understand how NSN user accounts work — fields, profile data, username rules, and how user identity flows through the API."
+---
+
+Every person on NSN is represented by a **user account**. When you register, NSN creates a user object that holds your core identity — your login credentials, display information, and account metadata. This user object is the anchor for everything else you do on the platform: posts you create, messages you send, and social connections you build all reference your user identity. Understanding the shape of this object will help you work confidently with any part of the NSN API.
+
+## User Identity
+
+Each user in NSN has two human-readable identifiers — a **username** and an **email address** — alongside a system-generated UUID.
+
+- **Username** — a short, unique handle (e.g. `jane_doe`) that others can use to find and mention you.
+- **Email** — a unique email address tied to your account.
+
+Both identifiers are unique across the platform, and **either one can be used to log in**. When you call the sign-in endpoint, supply whichever identifier you prefer together with your password.
+
+<Note>
+  You must provide at least one of `email` or `username` at sign-up. Providing both is allowed, but at minimum one is required.
+</Note>
+
+## User Fields
+
+The following fields make up the public-facing user object returned by the API.
+
+<ResponseField name="id" type="string (UUID)" required>
+  The globally unique identifier for this user. All other resources in the API (posts, messages, notifications, etc.) reference users by this UUID. See [User IDs](#user-ids) below for more detail.
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  The user's unique handle on NSN. Between 3 and 16 characters; only letters, numbers, and underscores are allowed. See [Username Rules](#username-rules) below.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  The user's email address. Unique across the platform and can be used as a login identifier.
+</ResponseField>
+
+<ResponseField name="full_name" type="string">
+  The user's display name — this is the human-readable name shown in their profile and across the UI. Up to 128 characters.
+</ResponseField>
+
+<ResponseField name="bio" type="string">
+  A short personal description the user can write about themselves. Displayed on their profile page.
+</ResponseField>
+
+<ResponseField name="avatar" type="string (URL)">
+  A URL pointing to the user's profile picture.
+</ResponseField>
+
+<ResponseField name="birth_date" type="string (date)">
+  The user's date of birth. Accepted in `YYYY-MM-DD` format (e.g. `1999-01-15`).
+</ResponseField>
+
+<ResponseField name="phone_number" type="string">
+  An optional phone number associated with the account.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  The UTC timestamp of when this account was created. Timezone-aware ISO 8601 format.
+</ResponseField>
+
+## Profile
+
+Beyond the base user object, every account has an associated **profile** that holds supplementary public information. The profile is automatically created when a user registers and is always tied 1-to-1 with the user.
+
+<ResponseField name="location" type="string">
+  A freeform text field where the user can describe their location (e.g. `"Berlin, Germany"`). Up to 1024 characters.
+</ResponseField>
+
+<ResponseField name="website" type="string (URL)">
+  A personal or professional website URL the user wants to share on their profile. Up to 1024 characters.
+</ResponseField>
+
+<ResponseField name="background_image" type="string (URL)">
+  A URL for the user's profile banner/cover image — the large image displayed behind their avatar on their profile page.
+</ResponseField>
+
+<Tip>
+  When fetching a user's full profile, the API returns both the base user fields and the profile extension together. You don't need to make separate requests for each.
+</Tip>
+
+## Username Rules
+
+Usernames in NSN follow strict formatting rules to ensure consistency across the platform:
+
+| Rule | Detail |
+|---|---|
+| **Minimum length** | 3 characters |
+| **Maximum length** | 16 characters |
+| **Allowed characters** | Letters (`a–z`, `A–Z`), digits (`0–9`), and underscores (`_`) |
+| **Case sensitivity** | Usernames are treated as case-insensitive for lookup purposes |
+
+Usernames that do not meet these requirements will be rejected at sign-up with a `400 Bad Request` error.
+
+```json
+// ✅ Valid username
+{ "username": "jane_doe_99" }
+
+// ❌ Too short
+{ "username": "jd" }
+
+// ❌ Contains disallowed characters
+{ "username": "jane.doe!" }
+```
+
+## User IDs
+
+NSN uses **UUIDs (Universally Unique Identifiers)** for all user identifiers. A user ID looks like this:
+
+```
+3fa85f64-5717-4562-b3fc-2c963f66afa6
+```
+
+You will encounter user IDs constantly when working with the API:
+
+- Every post, comment, share, and message includes a `user_id` referencing its author.
+- Notification objects include both a `user_id` (the recipient) and an `action_user_id` (the person who triggered the notification).
+- Follow/friendship relationships reference both parties by UUID.
+
+Always store and pass user IDs as strings in UUID format. Do not attempt to parse them as integers or short codes.

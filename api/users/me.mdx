@@ -1,0 +1,62 @@
+---
+title: "GET /user — Retrieve Your NSN Profile Info"
+sidebarTitle: "GET /user"
+description: "GET /user returns the authenticated user's display name and avatar URL. Requires a valid JWT Bearer token in the Authorization header."
+---
+
+Use this endpoint to retrieve the basic profile information for the currently authenticated user. The endpoint reads the identity from your JWT access token and returns your display name and avatar URL — useful for populating profile headers, navigation bars, or any UI element that needs to display who is signed in. You must include a valid `access_token` obtained from [POST /signin](/api/users/signin) or [POST /signup](/api/users/signup).
+
+## Endpoint
+
+```
+GET /user
+```
+
+## Authentication
+
+This endpoint requires a valid JWT Bearer token. Include your `access_token` in the `Authorization` header of every request.
+
+```
+Authorization: Bearer <access_token>
+```
+
+<Warning>
+  Requests without a valid `Authorization` header, or with an expired or malformed token, will receive a `401 Unauthorized` response. Obtain a fresh token by calling [POST /signin](/api/users/signin).
+</Warning>
+
+## Query Parameters
+
+This endpoint does not accept any query parameters.
+
+## Request Example
+
+```bash
+curl -X GET https://api.nsn.social/user \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJleHAiOjE3MTg0NTgwMDB9.Tr5K2pQn8vXoJLmZ1sYdFwRqMhNbUcEeAiGkOtPx4Vw"
+```
+
+## Response Fields
+
+<ResponseField name="name" type="string">
+  The full name of the authenticated user, as it was provided during registration.
+</ResponseField>
+
+<ResponseField name="avatar" type="string">
+  The URL of the user's avatar image. This may be a user-uploaded image or a default placeholder assigned at registration.
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "name": "Alice Nguyen",
+  "avatar": "https://cdn.nsn.social/avatars/a1b2c3d4-e5f6-7890-abcd-ef1234567890.jpg"
+}
+```
+
+## Error Cases
+
+| HTTP Status | Cause |
+|-------------|-------|
+| `401 Unauthorized` | The `Authorization` header is missing from the request |
+| `401 Unauthorized` | The token is expired, malformed, or has an invalid signature |

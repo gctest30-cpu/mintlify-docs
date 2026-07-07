@@ -1,0 +1,236 @@
+---
+title: "Like, Comment, and Share Posts in NSN"
+sidebarTitle: "Interacting"
+description: "A complete guide to social interactions in NSN — adding comments, liking content, sharing posts, and searching for other users."
+---
+
+NSN's social layer lets you discover other users, engage with their content through comments and reactions, and amplify posts by sharing them with your own audience. This guide covers every interaction endpoint available in the API, with complete curl examples for each action. All endpoints that write data require your `Authorization: Bearer YOUR_ACCESS_TOKEN` header.
+
+<Tip>
+  Most interaction endpoints require a target user's UUID (`{USER_ID}`). You can look up any user's UUID in two ways: call `GET /user` for your own ID, or use `GET /search-by-name?name=<query>` to find the IDs of other users. Both endpoints return a UUID you can drop straight into the path parameters shown throughout this guide.
+</Tip>
+
+---
+
+## Search for users
+
+Use the `GET /search-by-name` endpoint to find other NSN users by their display name. This endpoint does not require authentication and accepts a partial name as the `name` query parameter.
+
+```bash
+curl -X GET "http://localhost:8000/search-by-name?name=Alice"
+```
+
+**Successful response (`200 OK`):**
+
+```json
+{
+  "type": "User",
+  "count": 2,
+  "attributes": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "full_name": "Alice Smith",
+      "avatar": "https://cdn.nsn.example/avatars/3fa85f64.png"
+    },
+    {
+      "id": "7cb92a11-8831-4d73-a501-5f108b22dcf1",
+      "full_name": "Alice Johnson",
+      "avatar": null
+    }
+  ]
+}
+```
+
+The `count` field tells you how many matching users were found. Each entry in `attributes` contains the user's UUID, full name, and avatar URL (which may be `null` if the user has not set one). Save the `id` value for the user you want to interact with — you will need it in the endpoints below.
+
+---
+
+## Comments
+
+Comments let you reply directly to a post. Each comment is scoped to a specific user and post, and every comment gets its own UUID that you use for edits, deletions, and reactions.
+
+<Steps>
+
+  <Step title="Add a comment">
+    Post a comment on any accessible post by sending a `POST` to `/{USER_ID}/{POST_ID}/comment-post`. Replace `{USER_ID}` with the ID of the post's **author** and `{POST_ID}` with the post's UUID.
+
+    ```bash
+    curl -X POST http://localhost:8000/{USER_ID}/{POST_ID}/comment-post \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "Great post! Really enjoyed reading this."
+      }'
+    ```
+
+    **Successful response (`201 Created`):**
+
+    ```json
+    {
+      "message": "Comment successfully made."
+    }
+    ```
+  </Step>
+
+  <Step title="List comments on a post">
+    Retrieve all comments on a post with a `GET` request. No body is required.
+
+    ```bash
+    curl -X GET http://localhost:8000/{USER_ID}/{POST_ID}/comments \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+    ```
+
+    **Successful response (`200 OK`):**
+
+    ```json
+    [
+      {
+        "content": "Great post! Really enjoyed reading this.",
+        "created_at": "2024-09-01T11:00:00",
+        "updated_at": "2024-09-01T11:00:00"
+      },
+      {
+        "content": "I had a similar experience last week.",
+        "created_at": "2024-09-01T11:15:00",
+        "updated_at": "2024-09-01T11:15:00"
+      }
+    ]
+    ```
+  </Step>
+
+  <Step title="Edit a comment">
+    Update the text of a comment you previously made. You will need the comment's UUID (`{COMMENT_ID}`), which you can obtain from the comments list.
+
+    ```bash
+    curl -X PUT http://localhost:8000/{USER_ID}/{POST_ID}/{COMMENT_ID}/comment-edit \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "content": "Great post! I especially liked the second section."
+      }'
+    ```
+
+    **Successful response (`201`):**
+
+    ```json
+    {
+      "message": "Comment successfully edited."
+    }
+    ```
+  </Step>
+
+  <Step title="Delete a comment">
+    Remove a comment by sending a `DELETE` request. Supply the same three-part path used for editing.
+
+    ```bash
+    curl -X DELETE http://localhost:8000/{USER_ID}/{POST_ID}/{COMMENT_ID}/comment-delete \
+      -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+    ```
+
+    **Successful response (`201`):**
+
+    ```json
+    {
+      "message": "Comment successfully deleted."
+    }
+    ```
+  </Step>
+
+</Steps>
+
+---
+
+## Likes and dislikes
+
+Reactions in NSN are applied at the **comment level** — you like or dislike a specific comment on a post. All three path parameters are required: the post author's user ID, the post ID, and the comment ID.
+
+### Like a comment
+
+```bash
+curl -X POST http://localhost:8000/{USER_ID}/{POST_ID}/{COMMENT_ID}/like \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Successful response (`201 Created`):**
+
+```json
+{
+  "message": "Like"
+}
+```
+
+### Dislike a comment
+
+```bash
+curl -X POST http://localhost:8000/{USER_ID}/{POST_ID}/{COMMENT_ID}/dislike \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Successful response (`201 Created`):**
+
+```json
+{
+  "message": "Dislike"
+}
+```
+
+<Note>
+  If you attempt to like or dislike a comment that does not exist, or if your action violates a business rule (for example, liking a comment you already liked), the API returns a `400 Bad Request` with a descriptive error message.
+</Note>
+
+---
+
+## Shares
+
+Sharing lets you repost another user's content to your own profile, optionally adding a personal comment. Each share is stored with its own UUID (`{SHARE_ID}`), which you use when you want to remove it later.
+
+### Share a post
+
+Send a `POST` to `/{USER_ID}/{POST_ID}/share`. The `comment` field in the body is optional — omit it to share without any accompanying text.
+
+```bash
+curl -X POST http://localhost:8000/{USER_ID}/{POST_ID}/share \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comment": "This is worth reading — highly recommend!"
+  }'
+```
+
+To share without a comment:
+
+```bash
+curl -X POST http://localhost:8000/{USER_ID}/{POST_ID}/share \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+**Successful response (`201 Created`):**
+
+```json
+{
+  "message": "Post shared successfully."
+}
+```
+
+### Unshare a post
+
+Remove a share you previously created by sending a `PUT` request to `/{USER_ID}/{SHARE_ID}/unshare`. Replace `{SHARE_ID}` with the UUID of the share record (not the original post).
+
+```bash
+curl -X PUT http://localhost:8000/{USER_ID}/{SHARE_ID}/unshare \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Successful response (`201`):**
+
+```json
+{
+  "message": "Post unshared successfully."
+}
+```
+
+<Warning>
+  If you try to share a post you have already shared, or unshare a record that does not belong to you, the API returns a `400 Bad Request`. Always verify you have the correct `{SHARE_ID}` before calling unshare.
+</Warning>

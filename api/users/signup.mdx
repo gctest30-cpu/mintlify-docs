@@ -1,0 +1,99 @@
+---
+title: "POST /signup — Create a New NSN User Account"
+sidebarTitle: "POST /signup"
+description: "POST /signup creates a new user account in NSN. Accepts username or email plus password, full name, and birth date. Returns JWT tokens."
+---
+
+Use this endpoint to register a new account on NSN. You must supply a `password`, your `full_name`, and a `birth_date`, along with at least one login identifier — either an `email` address, a `username`, or both. On success, the API returns a pair of signed JWTs: an **access token** for authenticating subsequent requests, and a **refresh token** for obtaining new access tokens when the current one expires.
+
+## Endpoint
+
+```
+POST /signup
+```
+
+## Request Body
+
+<ParamField body="email" type="string">
+  Your email address. Must be a valid email format (e.g. `alice@example.com`). Required if `username` is not provided. If supplied, it must not already be registered on NSN.
+</ParamField>
+
+<ParamField body="username" type="string">
+  Your chosen username. Must be **3–16 characters** long and contain only letters, digits (`0–9`), and underscores (`_`). Required if `email` is not provided. If supplied, it must not already be taken.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Your account password. Must be **6–64 characters** long.
+</ParamField>
+
+<ParamField body="full_name" type="string" required>
+  Your full name. May contain **letters and spaces only**, up to a maximum of **32 characters**.
+</ParamField>
+
+<ParamField body="birth_date" type="string" required>
+  Your date of birth in **`YYYY-MM-DD`** format (e.g. `1995-08-21`).
+</ParamField>
+
+<Note>
+  At least one of `email` or `username` must be included in the request body. Both may be provided simultaneously.
+</Note>
+
+## Request Example
+
+```bash
+curl -X POST https://api.nsn.social/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "alice@example.com",
+    "username": "alice_nsn",
+    "password": "s3cur3P@ss",
+    "full_name": "Alice Nguyen",
+    "birth_date": "1995-08-21"
+  }'
+```
+
+## Response Fields
+
+<ResponseField name="access_token" type="string">
+  A signed JWT used to authenticate your requests. Include it as a `Bearer` token in the `Authorization` header of protected endpoints.
+</ResponseField>
+
+<ResponseField name="access_exp" type="string">
+  The ISO 8601 timestamp indicating when the `access_token` expires (e.g. `2025-06-15T14:30:00.000000+00:00`). After this time you will need to use the `refresh_token` to obtain a new access token.
+</ResponseField>
+
+<ResponseField name="refresh_token" type="string">
+  A signed JWT used to refresh your authentication session and obtain a new `access_token` without re-entering your credentials.
+</ResponseField>
+
+<ResponseField name="refresh_exp" type="string">
+  The ISO 8601 timestamp indicating when the `refresh_token` expires (e.g. `2025-07-15T14:30:00.000000+00:00`). After this time you must sign in again.
+</ResponseField>
+
+## Response Example
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJleHAiOjE3MTg0NTgwMDB9.Tr5K2pQn8vXoJLmZ1sYdFwRqMhNbUcEeAiGkOtPx4Vw",
+  "access_exp": "2025-06-15T14:30:00.000000+00:00",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJleHAiOjE3MjEwNTAwMDB9.8dHpLqYvNzCkWoXrTmJeUbAfSgDi2ElcOVynR6s0Kfw",
+  "refresh_exp": "2025-07-15T14:30:00.000000+00:00"
+}
+```
+
+## Error Cases
+
+| HTTP Status | Cause |
+|-------------|-------|
+| `400 Bad Request` | `email` and `username` both omitted |
+| `400 Bad Request` | `password` is missing, fewer than 6 characters, or more than 64 characters |
+| `400 Bad Request` | `full_name` is missing, contains non-letter/space characters, or exceeds 32 characters |
+| `400 Bad Request` | `birth_date` is missing or not in `YYYY-MM-DD` format |
+| `400 Bad Request` | `username` is shorter than 3 characters, longer than 16 characters, or contains invalid characters |
+| `400 Bad Request` | `email` format is invalid |
+| `400 Bad Request` | The provided `username` is already registered |
+| `400 Bad Request` | The provided `email` is already registered |
+
+<Warning>
+  Usernames and email addresses are unique across NSN. If you receive a `400` error indicating a duplicate, choose a different value and retry.
+</Warning>

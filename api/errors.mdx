@@ -1,0 +1,172 @@
+---
+title: "NSN API Error Responses and Status Codes"
+sidebarTitle: "Errors"
+description: "Reference for NSN API HTTP status codes and error response shapes. Learn what each error means and how to handle it in your application."
+---
+
+When a request to the NSN API cannot be completed successfully, the server returns a non-2xx HTTP status code along with a JSON body that describes what went wrong. Understanding this error format and the individual status codes helps you write defensive client code that fails gracefully and surfaces actionable messages to your users.
+
+## Error Response Format
+
+All error responses — whether caused by bad input, authentication failure, or an unexpected server crash — share the same JSON envelope:
+
+```json
+{
+  "errors": {
+    "title": "<error type>",
+    "datail": "<human-readable message>"
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `errors.title` | `string` | A short label for the error class, e.g. `"Bad Request"` or `"Unauthorized"`. |
+| `errors.datail` | `string` | A human-readable description of what went wrong. Use this field to surface feedback to your users. |
+
+<Note>
+  The `datail` key is spelled without the second `e` — this is a known quirk of the current API implementation. Make sure your response-parsing code uses `"datail"` (not `"detail"`) when reading this field.
+</Note>
+
+<Tip>
+  Always read the `errors.datail` field first when handling a non-2xx response. It contains the most actionable information — for example, whether a signup failed because the username was taken, the password was too short, or a required field was missing.
+</Tip>
+
+## HTTP Status Codes
+
+### 200 OK
+
+The request was processed successfully. The response body contains the data specific to the endpoint you called.
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access_exp": "2024-12-31T23:59:59",
+  "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
+  "refresh_exp": "2025-01-07T23:59:59"
+}
+```
+
+### 201 Created
+
+A new resource (user, post, comment, etc.) was successfully created. The response body contains the newly created resource's identifier or a confirmation message.
+
+```json
+{
+  "type": "users",
+  "count": 1,
+  "attributes": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  }
+}
+```
+
+### 400 Bad Request
+
+The server understood the request but rejected it because the input failed validation. Common causes include missing required fields, values that are too long or too short, and duplicate usernames or email addresses.
+
+```json
+{
+  "errors": {
+    "title": "Bad Request",
+    "datail": "Username too long"
+  }
+}
+```
+
+### 401 Unauthorized
+
+Authentication failed. This is returned when the `Authorization` header is missing, the token is malformed, the token has expired, or the provided credentials (username/email and password) do not match any account.
+
+```json
+{
+  "errors": {
+    "title": "Unauthorized",
+    "datail": "Invalid credentials"
+  }
+}
+```
+
+<Warning>
+  A `401` on a protected endpoint means your token has likely expired. Your client should redirect the user to sign in again and obtain a fresh `access_token`.
+</Warning>
+
+### 422 Unprocessable Entity
+
+The request body was structurally valid JSON but contained semantic errors that the server could not process — for example, an unrecognized date format in a `birth_date` field.
+
+```json
+{
+  "errors": {
+    "title": "Unprocessable Entity",
+    "datail": "Formato de data inválido. Use YYYY-MM-DD"
+  }
+}
+```
+
+### 500 Internal Server Error
+
+An unexpected error occurred on the server. The `datail` field may contain a raw exception message. You should not rely on the content of this message in production application logic — treat it as an opaque signal that something went wrong on the server side and retry or escalate accordingly.
+
+```json
+{
+  "errors": {
+    "title": "Internal Server Error",
+    "datail": "An unexpected error occurred"
+  }
+}
+```
+
+## Common Errors Reference
+
+The table below lists the specific error messages you are most likely to encounter, the status code they carry, and how to handle each one.
+
+| `errors.datail` message | Status | Cause | Recommended action |
+|---|---|---|---|
+| `"Email or username is required"` | 400 | Neither `email` nor `username` was provided in the request body. | Ensure at least one of `email` or `username` is included in your sign-up or sign-in payload. |
+| `"That username is already in use"` | 400 | The provided `username` belongs to an existing account. | Prompt the user to choose a different username. |
+| `"That email is already in use"` | 400 | The provided `email` is already registered. | Prompt the user to sign in instead, or use a different email address. |
+| `"Username too short"` | 400 | `username` is fewer than 3 characters. | Enforce a minimum of 3 characters in your client-side form validation. |
+| `"Username too long"` | 400 | `username` exceeds 32 characters. | Enforce a maximum of 32 characters in your client-side form validation. |
+| `"Password too short"` | 400 | `password` is fewer than 6 characters. | Enforce a minimum of 6 characters in your client-side form validation. |
+| `"Password too long"` | 400 | `password` exceeds 64 characters. | Enforce a maximum of 64 characters in your client-side form validation. |
+| `"Invalid credentials"` | 401 | The username/email and password combination does not match any account. | Prompt the user to check their credentials and try again. Do not reveal whether the username/email exists. |
+| `"Password is required"` | 400 | The `password` field was missing or empty. | Ensure the `password` field is always included in sign-up and sign-in requests. |
+
+## Handling Errors in Your Client
+
+A reliable pattern for consuming the NSN API is to check the HTTP status code first, then inspect `errors.datail` for specifics:
+
+```javascript
+const response = await fetch("http://localhost:8000/signup", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username: "ada", password: "short", full_name: "Ada", birth_date: "1815-12-10" }),
+});
+
+if (!response.ok) {
+  const body = await response.json();
+  // Note the intentional spelling: "datail"
+  const message = body?.errors?.datail ?? "An unknown error occurred";
+  console.error(`[${response.status}] ${message}`);
+}
+```
+
+```python
+import httpx
+
+response = httpx.post(
+    "http://localhost:8000/signup",
+    json={"username": "ada", "password": "short", "full_name": "Ada", "birth_date": "1815-12-10"},
+)
+
+if response.is_error:
+    body = response.json()
+    # Note the intentional spelling: "datail"
+    message = body.get("errors", {}).get("datail", "An unknown error occurred")
+    print(f"[{response.status_code}] {message}")
+```
+
+<Tip>
+  Build a single centralized error-handling function in your client that reads `errors.datail` and maps known messages to user-friendly strings. This keeps your UI code clean and makes it easy to adapt when the API adds new error messages.
+</Tip>

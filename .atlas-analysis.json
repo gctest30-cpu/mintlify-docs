@@ -1,13 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "NSN — New Social Network",
+  "projectType": "api-service",
+  "projectName": "NSN — New Social Network",
+  "projectDescription": "NSN is a social networking REST API built with FastAPI, providing user authentication, profiles, posts, comments, likes, and messaging features.",
   "theme": "luma",
-  "colors": {
-    "primary": "#6366F1",
-    "light": "#EEF2FF",
-    "dark": "#3730A3"
-  },
-  "favicon": "/favicon.svg",
+  "primaryColor": "#6366F1",
+  "lightColor": "#EEF2FF",
+  "darkColor": "#3730A3",
   "navigation": {
     "tabs": [
       {
@@ -79,10 +77,35 @@
       }
     ]
   },
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/gctest30-cpu/NSN-Back"
-    }
-  }
+  "keyFeatures": [
+    "JWT-based authentication with access and refresh tokens",
+    "User registration via email or username",
+    "User search by name",
+    "Post creation with title, content, visibility, media attachments, and hashtags",
+    "Post comments with create, edit, and delete",
+    "Post likes and dislikes",
+    "Post sharing with optional comment",
+    "Direct messaging between users",
+    "Notifications for likes, comments, follows, and messages",
+    "User profiles with avatar, bio, location, and website"
+  ],
+  "publicApiSurface": [
+    "GET /ping",
+    "POST /signup",
+    "POST /signin",
+    "GET /user",
+    "GET /search-by-name",
+    "POST /{user}/new-post",
+    "GET /{user}/find-post",
+    "PUT /{user}/{post}/edit-post",
+    "DELETE /{user}/{post}/delete-post",
+    "POST /{user}/{post}/comment-post",
+    "GET /{user}/{post}/comments",
+    "PUT /{user}/{post}/{comment}/comment-edit",
+    "DELETE /{user}/{post}/{comment}/comment-delete",
+    "POST /{user}/{post}/{comment}/like",
+    "POST /{user}/{post}/{comment}/dislike",
+    "POST /{user}/{post}/share",
+    "PUT /{user}/{share}/unshare"
+  ]
 }

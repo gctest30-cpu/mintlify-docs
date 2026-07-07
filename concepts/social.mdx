@@ -1,0 +1,231 @@
+---
+title: "Social Interactions: Likes, Comments, Shares, and Messages"
+sidebarTitle: "Social"
+description: "Explore NSN's social features — how likes, comments, post shares, and direct messages work and how they connect users."
+---
+
+NSN is built around meaningful interactions between people. Beyond simply reading posts, users can express reactions through likes, engage in discussion through comments, amplify content with shares, and connect privately through direct messages. Each of these interactions is a first-class resource in the API with its own endpoints and rules. This page walks you through each social feature, what data it carries, and how they relate to one another.
+
+## Likes
+
+A **like** is a user's positive reaction to a piece of content. In NSN, likes are flexible — they can be applied to both **posts** and **comments**, making them a universal reaction primitive.
+
+### How likes work
+
+- **One like per user per item** — a user can only like a given post or comment once. Attempting to like something you've already liked returns an error.
+- **Unliking** — to remove a like, call the unlike (delete) endpoint. This reverses the action entirely; there is no separate "dislike" concept.
+- **Target types** — when working with likes in the API, you'll see a `content_type` field that specifies whether the like targets a `"post"` or a `"comment"`, and a `content_id` field with the UUID of that item.
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this like.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who created the like.
+</ResponseField>
+
+<ResponseField name="content_id" type="string (UUID)">
+  The UUID of the post or comment that was liked.
+</ResponseField>
+
+<ResponseField name="content_type" type="string">
+  Specifies what was liked. One of `"post"` or `"comment"`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  UTC timestamp of when the like was created.
+</ResponseField>
+
+<Note>
+  Liking a post or comment triggers a **notification** to the content's author. See [Notifications](#notifications) below.
+</Note>
+
+---
+
+## Comments
+
+Comments let users reply directly to a post, opening a thread of discussion beneath it. Every comment is attached to a specific post and authored by a specific user.
+
+### Comment behavior
+
+- **Attached to posts** — each comment belongs to exactly one post, identified by the post's UUID.
+- **Full lifecycle** — you can **create**, **edit**, and **delete** your own comments. Edits update the comment's `updated_at` timestamp.
+- **Likeable** — comments can themselves be liked (see [Likes](#likes) above), using `content_type: "comment"`.
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this comment.
+</ResponseField>
+
+<ResponseField name="post_id" type="string (UUID)">
+  The UUID of the post this comment is attached to.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who wrote the comment.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  The text body of the comment.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  UTC timestamp of when the comment was posted.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string (timestamp)">
+  UTC timestamp of the most recent edit. `null` if the comment has never been edited.
+</ResponseField>
+
+<Tip>
+  Posting a comment on someone else's post triggers a **comment** notification to the post's author.
+</Tip>
+
+---
+
+## Shares
+
+A **share** lets a user re-broadcast someone else's post to their own audience, optionally adding a personal comment. Shares are distinct from reposts in that they can carry the sharer's own voice alongside the original content.
+
+### Share behavior
+
+- **Optional comment** — when sharing, you may include a short personal note. This comment is limited to **280 characters** and is separate from the original post's content.
+- **Soft deletion** — shares can be deleted. A deleted share is soft-deleted and will no longer appear in feeds, but the original post is unaffected.
+- **Original post preserved** — shares always reference the original post by its `post_id`. Deleting your share does not affect the original post or other shares of it.
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this share.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who created the share.
+</ResponseField>
+
+<ResponseField name="post_id" type="string (UUID)">
+  The UUID of the original post being shared.
+</ResponseField>
+
+<ResponseField name="comment" type="string">
+  An optional personal note added by the sharer. Maximum **280 characters**. Can be `null` if the user shared without a comment.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  UTC timestamp of when the share was created.
+</ResponseField>
+
+```json
+// Example share payload
+{
+  "post_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "comment": "This is a great take — everyone should read it."
+}
+```
+
+---
+
+## Direct Messages
+
+Direct messages (DMs) are private, one-to-one conversations between two users. Unlike posts, messages are not visible to anyone other than the sender and recipient.
+
+### Message behavior
+
+- **One-to-one only** — each message is sent from a single `sender_id` to a single `receiver_id`. Group messaging is not supported.
+- **Cannot message yourself** — the API rejects any message where `sender_id` and `receiver_id` are the same UUID.
+- **Read receipts** — every message carries an `is_read` flag. This starts as `false` and is updated when the recipient reads the message.
+- **Content limit** — message bodies are capped at **1024 characters**.
+- **Soft deletion** — messages can be deleted; a deleted message is removed from the conversation view but the event is preserved internally.
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this message.
+</ResponseField>
+
+<ResponseField name="sender_id" type="string (UUID)">
+  The UUID of the user who sent the message.
+</ResponseField>
+
+<ResponseField name="receiver_id" type="string (UUID)">
+  The UUID of the user who received the message.
+</ResponseField>
+
+<ResponseField name="content" type="string" required>
+  The text body of the message. Maximum **1024 characters**.
+</ResponseField>
+
+<ResponseField name="is_read" type="boolean">
+  Whether the recipient has read this message. Defaults to `false`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  UTC timestamp of when the message was sent.
+</ResponseField>
+
+<Note>
+  Sending a direct message triggers a **message** notification to the recipient. See [Notifications](#notifications) below.
+</Note>
+
+---
+
+## Notifications
+
+NSN automatically generates notifications to keep users informed about activity that involves them. Every notification tells the recipient **what happened**, **who caused it**, and **which piece of content it relates to**.
+
+### Notification types
+
+| Type | Triggered when… |
+|---|---|
+| `like` | Another user likes your post or comment |
+| `comment` | Another user comments on your post |
+| `follow` | Another user follows you |
+| `message` | Another user sends you a direct message |
+
+### Notification fields
+
+<ResponseField name="id" type="string (UUID)">
+  Unique identifier for this notification.
+</ResponseField>
+
+<ResponseField name="user_id" type="string (UUID)">
+  The UUID of the user who **receives** this notification.
+</ResponseField>
+
+<ResponseField name="action_user_id" type="string (UUID)">
+  The UUID of the user whose action **triggered** this notification — the person who liked, commented, followed, or messaged.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The kind of notification. One of `"like"`, `"comment"`, `"follow"`, or `"message"`.
+</ResponseField>
+
+<ResponseField name="content_id" type="string (UUID)">
+  The UUID of the content associated with this notification — for example, the post that was liked, or the comment that was posted.
+</ResponseField>
+
+<ResponseField name="content_type" type="string">
+  The type of content referenced by `content_id`. One of `"post"`, `"comment"`, `"friendship"`, or `"message"`.
+</ResponseField>
+
+<ResponseField name="is_read" type="boolean">
+  Whether the user has seen this notification. Defaults to `false`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string (timestamp)">
+  UTC timestamp of when the notification was generated.
+</ResponseField>
+
+<Expandable title="Example notification — someone liked your post">
+```json
+{
+  "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+  "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "action_user_id": "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e",
+  "type": "like",
+  "content_id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890",
+  "content_type": "post",
+  "is_read": false,
+  "created_at": "2024-11-15T14:32:00Z"
+}
+```
+</Expandable>
+
+<Tip>
+  Poll or subscribe to the notifications endpoint to keep your client's unread badge counts in sync. Mark notifications as read by calling the update endpoint with `is_read: true`.
+</Tip>
