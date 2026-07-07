@@ -1,20 +1,16 @@
 ---
 title: "NSN: A REST API for Social Networking Features"
 sidebarTitle: "Introduction"
-description: "NSN is a social networking REST API offering user accounts, posts, comments, likes, shares, and direct messaging. Learn what NSN can do."
+description: "NSN is a social networking REST API offering user accounts, authentication, and user discovery. Learn what NSN can do and how to get started."
 ---
 
-NSN (New Social Network) is a REST API that gives you the building blocks to create rich social networking experiences. Whether you're building a community platform, a messaging app, or a content-sharing service, NSN handles the social layer so you can focus on your product. The API follows standard HTTP conventions and returns JSON responses, making it easy to integrate from any language or framework.
+NSN (New Social Network) is a REST API that gives you the building blocks to create social networking experiences. Whether you're building a community platform or a user-discovery service, NSN handles the social layer so you can focus on your product. The API follows standard HTTP conventions and returns JSON responses, making it easy to integrate from any language or framework.
 
 ## What NSN Provides
 
-- **User accounts** — Sign up, sign in, and manage user profiles with avatars and display names.
+- **User accounts** — Sign up and sign in with email or username, secured by JWT authentication.
+- **User profiles** — Retrieve a user's display name and avatar from an authenticated session.
 - **User discovery** — Search for users by name to build friend lists and social graphs.
-- **Posts** — Create, read, update, and delete content shared with the network.
-- **Comments** — Threaded replies on any post.
-- **Likes** — Reaction counts and tracking per post or comment.
-- **Shares** — Repost or forward content to your own followers.
-- **Direct messaging** — Private conversations between users.
 
 ## Explore the Docs
 
@@ -24,12 +20,6 @@ NSN (New Social Network) is a REST API that gives you the building blocks to cre
   </Card>
   <Card title="Authentication" icon="lock" href="/authentication">
     Learn how to obtain Bearer tokens via signup or signin and attach them to every request.
-  </Card>
-  <Card title="API Reference" icon="code" href="/api/overview">
-    Browse every endpoint, its parameters, and its response shapes in the full API reference.
-  </Card>
-  <Card title="Guides" icon="book-open" href="/guides/register-and-login">
-    Step-by-step walkthroughs for common workflows like registering users and handling sessions.
   </Card>
 </CardGroup>
 
@@ -51,12 +41,12 @@ Every endpoint returns JSON. Successful responses contain the data described in 
 {
   "errors": {
     "title": "Bad Request",
-    "detail": "Username too short"
+    "datail": "Username too short"
   }
 }
 ```
 
-The `title` field contains the error category (e.g. `"Bad Request"`, `"Unauthorized"`, `"Not Found"`) and `detail` provides a human-readable description of what went wrong.
+The `title` field contains the error category (e.g. `"Bad Request"`, `"Unauthorized"`, `"Not Found"`) and `datail` provides a human-readable description of what went wrong.
 
 ## Authentication at a Glance
 

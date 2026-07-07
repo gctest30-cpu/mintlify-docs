@@ -1,7 +1,7 @@
 ---
-title: "Register an Account and Log In to NSN"
+title: "How to Register an NSN Account and Obtain JWT Tokens"
 sidebarTitle: "Register & Log In"
-description: "Step-by-step guide to creating an NSN user account and signing in to obtain JWT tokens for authenticating API requests."
+description: "Step-by-step guide to creating an NSN user account and signing in to obtain JWT tokens for authenticating every subsequent API request."
 ---
 
 Before you can create posts, interact with other users, or access any protected resource, you need an NSN account and a valid JWT access token. This guide walks you through registering a new account, storing your tokens, verifying your identity, and signing back in whenever your session expires.
@@ -34,23 +34,16 @@ Before you can create posts, interact with other users, or access any protected 
       }'
     ```
 
-    A successful registration returns HTTP `200` with your new user ID and four token fields:
+    A successful registration returns HTTP `200` with four token fields:
 
     ```json
     {
-      "type": "User",
-      "count": 1,
-      "attributes": {
-        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-      },
       "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "access_exp": "2024-09-01T12:00:00",
       "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
       "refresh_exp": "2024-09-08T12:00:00"
     }
     ```
-
-    Save `attributes.id` — this is your **User ID (UUID)** and is used as the `{user_id}` path parameter in every subsequent request.
 
     <Warning>
       Both `username` and `email` must be unique across NSN. If either value is already registered, the API returns a `400 Bad Request` — see the error handling section below.
@@ -72,7 +65,7 @@ Before you can create posts, interact with other users, or access any protected 
     ```
 
     <Tip>
-      Store your `refresh_token` securely — for example in an encrypted keychain or secure storage rather than a plain environment variable. When your `access_token` expires (check `access_exp`), you can use the `refresh_token` to re-authenticate without asking the user for their password again.
+      Store your `refresh_token` securely — for example in an encrypted keychain or secure storage. When your `access_token` expires (check `access_exp`), you can use the `refresh_token` to re-authenticate without asking the user for their password again.
     </Tip>
   </Step>
 

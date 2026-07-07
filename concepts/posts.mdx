@@ -1,5 +1,5 @@
 ---
-title: "Posts, Media, and Hashtags in NSN"
+title: "NSN Posts: Content Fields, Media Attachments, and Hashtags"
 sidebarTitle: "Posts"
 description: "Learn how posts work in NSN — content limits, media attachments, hashtags, visibility settings, and how posts are structured in the API."
 ---
@@ -47,7 +47,7 @@ A post is composed of a handful of core fields. Only `content` is strictly requi
 </ResponseField>
 
 <Note>
-  Posts support soft deletion — a deleted post is not immediately removed from the system. If your application retrieves a post and receives a `404`, the post may have been deleted or its visibility may prevent you from accessing it.
+  If your application retrieves a post and receives a `404`, the post may have been deleted or its visibility setting may prevent you from accessing it.
 </Note>
 
 ## Media Attachments
@@ -154,16 +154,10 @@ Key behaviors to know:
 
 ## Visibility
 
-The `visibility` field on a post determines who can see it. You set this when creating a post and can update it later.
-
-| Value | Description |
-|---|---|
-| `"public"` | Visible to everyone, including unauthenticated users |
-| `"friends"` | Visible only to users you follow or are connected with |
-| `"private"` | Visible only to you |
+The `visibility` field on a post is a string (up to 16 characters) that controls who can see the post. You set this when creating a post and can update it later. Refer to the API reference for the visibility values your application should send and expect.
 
 <Note>
-  The API enforces visibility when returning posts — if you request a post that the authenticated user is not permitted to see, the API will return a `404` rather than a `403` to avoid leaking the existence of private content.
+  The API enforces visibility when returning posts — if you request a post that the authenticated user is not permitted to see, the API will return a `404` rather than a `403` to avoid leaking the existence of restricted content.
 </Note>
 
 ## Post Lifecycle
@@ -172,11 +166,11 @@ Every post moves through a simple lifecycle:
 
 1. **Created** — `created_at` is set; `updated_at` is `null`.
 2. **Edited** — `updated_at` is set to the timestamp of the most recent change. `created_at` never changes.
-3. **Deleted** — the post is soft-deleted. It is no longer returned in feeds or search results, but your application should handle `404` responses gracefully rather than assuming a post ID is permanently invalid.
+3. **Deleted** — the post is removed and no longer returned in feeds or search results. Always handle `404` responses gracefully rather than assuming a post ID is permanently valid.
 
 ```
 Created → [optional edits] → Deleted
   ↑                              ↑
-created_at set             soft deletion;
+created_at set             post deleted;
                            post disappears from API
 ```

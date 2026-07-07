@@ -1,7 +1,7 @@
 ---
-title: "Users and Profiles in NSN"
+title: "User Accounts and Profile Data: NSN API Field Reference"
 sidebarTitle: "Users"
-description: "Understand how NSN user accounts work — fields, profile data, username rules, and how user identity flows through the API."
+description: "Understand how NSN user accounts work — fields, profile data, username rules, and how user identity flows through every part of the API."
 ---
 
 Every person on NSN is represented by a **user account**. When you register, NSN creates a user object that holds your core identity — your login credentials, display information, and account metadata. This user object is the anchor for everything else you do on the platform: posts you create, messages you send, and social connections you build all reference your user identity. Understanding the shape of this object will help you work confidently with any part of the NSN API.
@@ -36,7 +36,7 @@ The following fields make up the public-facing user object returned by the API.
 </ResponseField>
 
 <ResponseField name="full_name" type="string">
-  The user's display name — this is the human-readable name shown in their profile and across the UI. Up to 128 characters.
+  The user's display name — this is the human-readable name shown in their profile and across the UI. Up to 512 characters.
 </ResponseField>
 
 <ResponseField name="bio" type="string">

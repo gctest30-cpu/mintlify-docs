@@ -1,13 +1,13 @@
 ---
-title: "Like, Comment, and Share Posts in NSN"
+title: "How to Like, Comment on, and Share Posts in the NSN API"
 sidebarTitle: "Interacting"
-description: "A complete guide to social interactions in NSN — adding comments, liking content, sharing posts, and searching for other users."
+description: "A complete guide to social interactions in NSN — adding and editing comments, reacting with likes and dislikes, sharing posts, and searching for users."
 ---
 
 NSN's social layer lets you discover other users, engage with their content through comments and reactions, and amplify posts by sharing them with your own audience. This guide covers every interaction endpoint available in the API, with complete curl examples for each action. All endpoints that write data require your `Authorization: Bearer YOUR_ACCESS_TOKEN` header.
 
 <Tip>
-  Most interaction endpoints require a target user's UUID (`{USER_ID}`). You can look up any user's UUID in two ways: call `GET /user` for your own ID, or use `GET /search-by-name?name=<query>` to find the IDs of other users. Both endpoints return a UUID you can drop straight into the path parameters shown throughout this guide.
+  Most interaction endpoints require a target user's UUID (`{USER_ID}`). Use `GET /search-by-name?name=<query>` to find the UUIDs of other users — each entry in the `attributes` array contains an `id` field you can drop straight into the path parameters shown throughout this guide.
 </Tip>
 
 ---

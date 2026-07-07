@@ -1,7 +1,7 @@
 ---
-title: "GET /search-by-name — Search NSN Users by Name"
+title: "GET /search-by-name — Search for NSN Users by Name"
 sidebarTitle: "GET /search-by-name"
-description: "GET /search-by-name searches for NSN users by full name. Returns a list of matching users with their IDs and avatar URLs."
+description: "GET /search-by-name searches NSN for users by full name. Returns matched profiles with unique IDs, display names, and avatar URLs. No auth required."
 ---
 
 Use this endpoint to search for NSN users by their full name. Pass a name string as the `name` query parameter and the API returns a list of matching user profiles, each including a unique ID, full name, and avatar URL. This endpoint does not require authentication, making it suitable for public-facing search experiences such as friend finders or user directories. Note that the `name` query must contain only letters and spaces (no digits or special characters) and must not exceed 32 characters.

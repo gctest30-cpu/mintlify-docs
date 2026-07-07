@@ -1,7 +1,7 @@
 ---
 title: "Social Interactions: Likes, Comments, Shares, and Messages"
 sidebarTitle: "Social"
-description: "Explore NSN's social features — how likes, comments, post shares, and direct messages work and how they connect users."
+description: "Explore NSN's social features — how likes, comments, post shares, direct messages, and notifications connect users on the platform."
 ---
 
 NSN is built around meaningful interactions between people. Beyond simply reading posts, users can express reactions through likes, engage in discussion through comments, amplify content with shares, and connect privately through direct messages. Each of these interactions is a first-class resource in the API with its own endpoints and rules. This page walks you through each social feature, what data it carries, and how they relate to one another.
@@ -89,7 +89,7 @@ A **share** lets a user re-broadcast someone else's post to their own audience, 
 ### Share behavior
 
 - **Optional comment** — when sharing, you may include a short personal note. This comment is limited to **280 characters** and is separate from the original post's content.
-- **Soft deletion** — shares can be deleted. A deleted share is soft-deleted and will no longer appear in feeds, but the original post is unaffected.
+- **Deletable** — shares can be deleted. A deleted share will no longer appear in feeds, but the original post is unaffected.
 - **Original post preserved** — shares always reference the original post by its `post_id`. Deleting your share does not affect the original post or other shares of it.
 
 <ResponseField name="id" type="string (UUID)">
@@ -132,7 +132,6 @@ Direct messages (DMs) are private, one-to-one conversations between two users. U
 - **Cannot message yourself** — the API rejects any message where `sender_id` and `receiver_id` are the same UUID.
 - **Read receipts** — every message carries an `is_read` flag. This starts as `false` and is updated when the recipient reads the message.
 - **Content limit** — message bodies are capped at **1024 characters**.
-- **Soft deletion** — messages can be deleted; a deleted message is removed from the conversation view but the event is preserved internally.
 
 <ResponseField name="id" type="string (UUID)">
   Unique identifier for this message.

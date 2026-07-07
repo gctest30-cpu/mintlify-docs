@@ -1,19 +1,19 @@
 ---
-title: "Create and Manage Posts with the NSN API"
+title: "Create, Retrieve, Edit, and Delete Posts in the NSN API"
 sidebarTitle: "Creating Posts"
-description: "Learn how to create, update, retrieve, and delete posts in NSN using the REST API with authenticated requests."
+description: "Learn how to create, retrieve, edit, and delete posts in NSN using authenticated REST API requests, complete with examples and response shapes."
 ---
 
 Posts are the primary unit of content in NSN. Once you have a valid access token and know your User ID, you can create posts, retrieve your post history, make edits, and remove content — all through simple REST calls. Every write operation on posts requires an `Authorization` header containing your Bearer token.
 
 <Note>
-  All post endpoints include your **User ID** (`{USER_ID}`) as a path parameter. You can find your User ID in the `attributes.id` field of the `/signup` response, or by calling `GET /user` after signing in. It is a UUID string in the format `3fa85f64-5717-4562-b3fc-2c963f66afa6`.
+  All post endpoints include your **User ID** (`{USER_ID}`) as a path parameter. Your User ID is the UUID associated with your account. You can look it up at any time by calling `GET /search-by-name?name=<your name>` and finding your entry in the `attributes` array, which contains each user's `id` field.
 </Note>
 
 <Steps>
 
   <Step title="Create a post">
-    Send a `POST` request to `/{USER_ID}/new-post` with a JSON body containing your post content and visibility setting. The `title` field is optional — you can publish a post with content alone.
+    Send a `POST` request to `/{USER_ID}/new-post` with a JSON body containing your post content. The `title` field is optional — you can publish a post with content alone.
 
     ```bash
     curl -X POST http://localhost:8000/{USER_ID}/new-post \
@@ -21,8 +21,7 @@ Posts are the primary unit of content in NSN. Once you have a valid access token
       -H "Content-Type: application/json" \
       -d '{
         "title": "My first post",
-        "content": "Hello, NSN! Excited to share my first update.",
-        "visibility": "public"
+        "content": "Hello, NSN! Excited to share my first update."
       }'
     ```
 
@@ -34,7 +33,6 @@ Posts are the primary unit of content in NSN. Once you have a valid access token
     |---|---|---|---|
     | `title` | string | No | A short headline for the post. Maximum 128 characters. |
     | `content` | string | Yes | The body text of your post. Maximum 1024 characters. |
-    | `visibility` | string | Yes | Who can see the post. See [Visibility options](#visibility-options) below. |
 
     **Successful response (`201 Created`):**
 
@@ -88,8 +86,7 @@ Posts are the primary unit of content in NSN. Once you have a valid access token
       -H "Content-Type: application/json" \
       -d '{
         "title": "My first post (updated)",
-        "content": "Hello, NSN! I have updated this post with more detail.",
-        "visibility": "friends"
+        "content": "Hello, NSN! I have updated this post with more detail."
       }'
     ```
 
@@ -101,7 +98,6 @@ Posts are the primary unit of content in NSN. Once you have a valid access token
     |---|---|---|
     | `title` | string | New title. Maximum 128 characters. Omit to leave unchanged. |
     | `content` | string | New body text. Maximum 1024 characters. Omit to leave unchanged. |
-    | `visibility` | string | New visibility setting. Omit to leave unchanged. |
 
     **Successful response:**
 
@@ -129,23 +125,11 @@ Posts are the primary unit of content in NSN. Once you have a valid access token
     ```
 
     <Warning>
-      Deleting a post is a soft-delete operation on the server side, but from the API consumer's perspective the post will no longer appear in `GET /{USER_ID}/find-post` and all associated comments and shares will become inaccessible. Make sure you intend to permanently remove the content before sending this request.
+      Once deleted, the post will no longer appear in `GET /{USER_ID}/find-post` and all associated comments and shares will become inaccessible. Make sure you intend to permanently remove the content before sending this request.
     </Warning>
   </Step>
 
 </Steps>
-
-## Visibility options
-
-The `visibility` field controls who can see your post. The following values are supported:
-
-| Value | Who can see the post |
-|---|---|
-| `"public"` | Anyone on NSN |
-| `"friends"` | Only users you are connected with |
-| `"private"` | Only you |
-
-Always include `visibility` when creating a post. If you are unsure, start with `"public"` and update it later using the edit endpoint.
 
 ## Content limits
 

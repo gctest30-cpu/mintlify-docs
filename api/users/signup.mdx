@@ -1,5 +1,5 @@
 ---
-title: "POST /signup — Create a New NSN User Account"
+title: "POST /signup — Create and Register Your NSN Account"
 sidebarTitle: "POST /signup"
 description: "POST /signup creates a new user account in NSN. Accepts username or email plus password, full name, and birth date. Returns JWT tokens."
 ---
@@ -91,8 +91,8 @@ curl -X POST https://api.nsn.social/signup \
 | `400 Bad Request` | `birth_date` is missing or not in `YYYY-MM-DD` format |
 | `400 Bad Request` | `username` is shorter than 3 characters, longer than 16 characters, or contains invalid characters |
 | `400 Bad Request` | `email` format is invalid |
-| `400 Bad Request` | The provided `username` is already registered |
-| `400 Bad Request` | The provided `email` is already registered |
+| `400 Bad Request` | The provided `username` is already taken (`"That username is already in use. Please try a different one."`) |
+| `400 Bad Request` | The provided `email` is already registered (`"That email is already in use. Please try a different one."`) |
 
 <Warning>
   Usernames and email addresses are unique across NSN. If you receive a `400` error indicating a duplicate, choose a different value and retry.

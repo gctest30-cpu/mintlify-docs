@@ -1,15 +1,15 @@
 ---
-title: "POST /{user_id}/new-post — Create a New Post"
+title: "POST /{user_logged}/new-post — Create a New Post"
 sidebarTitle: "Create Post"
-description: "POST /{user_id}/new-post creates a new post for the authenticated user. Accepts title, content, and visibility. Requires Bearer auth."
+description: "POST /{user_logged}/new-post creates a new post for the authenticated user. Accepts title, content, and visibility. Requires Bearer auth."
 ---
 
-Use this endpoint to publish a new post on behalf of the authenticated user. You supply the post's content, an optional title, and a visibility level that controls which other users can see the post in their feeds. The `{user_id}` path parameter must match the identity encoded in your Bearer token — attempting to create a post for another user will be rejected.
+Use this endpoint to publish a new post on behalf of the authenticated user. You supply the post's content, an optional title, and a visibility level that controls which other users can see the post in their feeds. The `{user_logged}` path parameter must match the identity encoded in your Bearer token — attempting to create a post for another user will be rejected.
 
 ## Endpoint
 
 ```
-POST /{user_id}/new-post
+POST /{user_logged}/new-post
 ```
 
 ## Authentication
@@ -20,7 +20,7 @@ POST /{user_id}/new-post
 
 ## Path Parameters
 
-<ParamField path="user_id" type="string" required>
+<ParamField path="user_logged" type="string" required>
   The UUID of the authenticated user on whose behalf the post is being created. Must match the identity in your Bearer token.
 
   **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
@@ -61,10 +61,10 @@ curl --request POST \
 ```python Python
 import httpx
 
-USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+USER_LOGGED = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
 
 response = httpx.post(
-    f"https://api.nsn.com/{USER_ID}/new-post",
+    f"https://api.nsn.com/{USER_LOGGED}/new-post",
     headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
     json={
         "title": "My first post",

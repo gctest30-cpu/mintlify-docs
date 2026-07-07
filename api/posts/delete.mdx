@@ -1,15 +1,15 @@
 ---
-title: "DELETE /{user_id}/{post_id}/delete-post — Remove a Post"
+title: "DELETE /{user_logged}/{post}/delete-post — Remove a Post"
 sidebarTitle: "Delete Post"
-description: "DELETE /{user_id}/{post_id}/delete-post soft-deletes a post. The post is hidden from feeds but the data is retained."
+description: "DELETE /{user_logged}/{post}/delete-post removes a post from your profile and feeds. The post is immediately hidden from view. Requires Bearer auth."
 ---
 
-Use this endpoint to remove a post from your profile and all feeds. NSN uses soft deletion — calling this endpoint marks the post as deleted and immediately hides it from view, but the underlying data is retained in the database. You must be the owner of the post to delete it; the `{user_id}` in the path must match your authenticated identity.
+Use this endpoint to remove a post from your profile and all feeds. Calling this endpoint immediately hides the post from view across NSN. You must be the owner of the post to delete it; the `{user_logged}` in the path must match your authenticated identity.
 
 ## Endpoint
 
 ```
-DELETE /{user_id}/{post_id}/delete-post
+DELETE /{user_logged}/{post}/delete-post
 ```
 
 ## Authentication
@@ -20,13 +20,13 @@ DELETE /{user_id}/{post_id}/delete-post
 
 ## Path Parameters
 
-<ParamField path="user_id" type="string" required>
+<ParamField path="user_logged" type="string" required>
   The UUID of the authenticated user who owns the post. Must match the identity in your Bearer token.
 
   **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
 </ParamField>
 
-<ParamField path="post_id" type="string" required>
+<ParamField path="post" type="string" required>
   The UUID of the post you want to delete.
 
   **Example:** `a1b2c3d4-e5f6-7890-abcd-ef1234567890`
@@ -45,11 +45,11 @@ curl --request DELETE \
 ```python Python
 import httpx
 
-USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
-POST_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+USER_LOGGED = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+POST = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 response = httpx.delete(
-    f"https://api.nsn.com/{USER_ID}/{POST_ID}/delete-post",
+    f"https://api.nsn.com/{USER_LOGGED}/{POST}/delete-post",
     headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
 )
 print(response.json())
@@ -61,7 +61,7 @@ print(response.json())
 
 ### 201 Created
 
-Returned when the post is successfully soft-deleted.
+Returned when the post is successfully deleted.
 
 ```json
 {
@@ -70,7 +70,7 @@ Returned when the post is successfully soft-deleted.
 ```
 
 <Note>
-  **This is a soft delete.** The post's `deleted_at` timestamp is set to the time of the request, and the post is immediately removed from all feeds and profile views. However, the post record and its associated content are not permanently erased from the database. If you require permanent deletion of your data, please refer to the account data removal process in the [Privacy & Data](#) section.
+  Once deleted, the post is immediately removed from your profile and all feeds across NSN. If you require permanent deletion of your data, please refer to the account data removal process in the [Privacy & Data](#) section.
 </Note>
 
 ## Error Responses
@@ -79,7 +79,3 @@ Returned when the post is successfully soft-deleted.
 |--------|---------|----------------|
 | `401 Unauthorized` | Authentication failed | The `Authorization` header is missing, the token is invalid/expired, or you do not own the post |
 | `500 Internal Server Error` | Unexpected server error | An unhandled exception occurred while processing the request |
-
-<Tip>
-  Changed your mind? Because deleted posts are not permanently erased, NSN support may be able to assist with post recovery within a limited window. Contact support before the retention period expires.
-</Tip>

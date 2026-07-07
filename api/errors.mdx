@@ -1,5 +1,5 @@
 ---
-title: "NSN API Error Responses and Status Codes"
+title: "NSN API Errors: HTTP Status Codes and JSON Response Format"
 sidebarTitle: "Errors"
 description: "Reference for NSN API HTTP status codes and error response shapes. Learn what each error means and how to handle it in your application."
 ---
@@ -90,6 +90,19 @@ Authentication failed. This is returned when the `Authorization` header is missi
 <Warning>
   A `401` on a protected endpoint means your token has likely expired. Your client should redirect the user to sign in again and obtain a fresh `access_token`.
 </Warning>
+
+### 404 Not Found
+
+The requested resource does not exist. This is returned when you reference an entity — such as a user or post — that cannot be found on the server.
+
+```json
+{
+  "errors": {
+    "title": "Not Found",
+    "datail": "User not found"
+  }
+}
+```
 
 ### 422 Unprocessable Entity
 

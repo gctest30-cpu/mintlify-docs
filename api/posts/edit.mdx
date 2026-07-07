@@ -1,15 +1,15 @@
 ---
-title: "PUT /{user_id}/{post_id}/edit-post — Update a Post"
+title: "PUT /{user_logged}/{post}/edit-post — Update a Post"
 sidebarTitle: "Edit Post"
-description: "PUT /{user_id}/{post_id}/edit-post updates an existing post's title, content, or visibility. Requires the authenticated user to own the post."
+description: "PUT /{user_logged}/{post}/edit-post updates an existing post's title, content, or visibility. Requires the authenticated user to own the post."
 ---
 
-Use this endpoint to update an existing post. You can modify any combination of the post's title, content, and visibility. Only the fields you include in the request body will be changed — omitted fields are left as they are. You must be the owner of the post to edit it; the `{user_id}` in the path must match your authenticated identity.
+Use this endpoint to update an existing post. You can modify any combination of the post's title, content, and visibility. Only the fields you include in the request body will be changed — omitted fields are left as they are. You must be the owner of the post to edit it; the `{user_logged}` in the path must match your authenticated identity.
 
 ## Endpoint
 
 ```
-PUT /{user_id}/{post_id}/edit-post
+PUT /{user_logged}/{post}/edit-post
 ```
 
 ## Authentication
@@ -20,13 +20,13 @@ PUT /{user_id}/{post_id}/edit-post
 
 ## Path Parameters
 
-<ParamField path="user_id" type="string" required>
+<ParamField path="user_logged" type="string" required>
   The UUID of the authenticated user who owns the post. Must match the identity in your Bearer token.
 
   **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
 </ParamField>
 
-<ParamField path="post_id" type="string" required>
+<ParamField path="post" type="string" required>
   The UUID of the post you want to edit.
 
   **Example:** `a1b2c3d4-e5f6-7890-abcd-ef1234567890`
@@ -69,11 +69,11 @@ curl --request PUT \
 ```python Python
 import httpx
 
-USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
-POST_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+USER_LOGGED = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+POST = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 response = httpx.put(
-    f"https://api.nsn.com/{USER_ID}/{POST_ID}/edit-post",
+    f"https://api.nsn.com/{USER_LOGGED}/{POST}/edit-post",
     headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
     json={
         "title": "My updated post title",
@@ -99,7 +99,7 @@ Returned when the post is successfully updated.
 ```
 
 <Note>
-  After a successful edit, the post's `updated_at` timestamp is refreshed to reflect the time of the most recent change. You can verify this by calling `GET /{user_id}/find-post`.
+  After a successful edit, the post's `updated_at` timestamp is refreshed to reflect the time of the most recent change. You can verify this by calling `GET /{user_logged}/find-post`.
 </Note>
 
 ## Error Responses

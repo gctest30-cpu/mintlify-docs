@@ -68,8 +68,12 @@ This guide walks you through the fastest path to a working NSN integration: crea
 
     ```json
     {
-      "name": "Ada Lovelace",
-      "avatar": "https://cdn.example.com/avatars/ada_dev.png"
+      "type": "User",
+      "count": 1,
+      "attributes": {
+        "full_name": "Ada Lovelace",
+        "avatar": "https://cdn.example.com/avatars/ada_dev.png"
+      }
     }
     ```
 
@@ -77,27 +81,28 @@ This guide walks you through the fastest path to a working NSN integration: crea
   </Step>
 
   <Step title="Search for other users">
-    Once authenticated, you can discover other users on the network with `GET /search-by-name`. Pass the `name` query parameter to perform a name-based search.
+    You can discover other users on the network with `GET /search-by-name`. Pass the `name` query parameter to perform a name-based search. This endpoint does not require authentication.
 
     ```bash
-    curl "http://localhost:8000/search-by-name?name=John" \
-      -H "Authorization: Bearer $ACCESS_TOKEN"
+    curl "http://localhost:8000/search-by-name?name=John"
     ```
 
     The endpoint returns a list of matching user profiles:
 
     ```json
     {
-      "type": "users",
+      "type": "User",
       "count": 2,
       "attributes": [
         {
           "id": "d4f0abcf-1234-5678-abcd-ef0123456789",
+          "email": "john.doe@example.com",
           "full_name": "John Doe",
           "avatar": "https://cdn.example.com/avatars/johndoe.png"
         },
         {
           "id": "a1b2c3d4-9876-5432-dcba-fedcba987654",
+          "email": null,
           "full_name": "Johnny Appleseed",
           "avatar": null
         }
@@ -105,7 +110,7 @@ This guide walks you through the fastest path to a working NSN integration: crea
     }
     ```
 
-    Use the returned `id` values to reference users in other API calls, such as sending a direct message or adding a friend.
+    Use the returned `id` values to reference users in other API calls.
   </Step>
 
 </Steps>
@@ -115,5 +120,3 @@ This guide walks you through the fastest path to a working NSN integration: crea
 You now have a working token and know how to call authenticated endpoints. Here is where to go next:
 
 - **[Authentication](/authentication)** — Understand token expiry, the signin flow, and how to handle `401` errors gracefully.
-- **[API Reference](/api/overview)** — Explore every available endpoint and its full parameter and response documentation.
-- **[Guides](/guides/register-and-login)** — Follow practical, scenario-based walkthroughs for common NSN workflows.

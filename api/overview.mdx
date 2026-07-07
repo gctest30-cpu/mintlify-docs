@@ -1,7 +1,7 @@
 ---
-title: "NSN REST API Overview and Conventions"
+title: "NSN API Overview: Base URL, Auth, and Request Conventions"
 sidebarTitle: "Overview"
-description: "Learn the NSN API base URL, authentication method, request format, response conventions, and how to verify the API is reachable."
+description: "Learn the NSN API base URL, authentication method, request format, response conventions, and how to verify the server is reachable."
 ---
 
 The NSN (New Social Network) API is a RESTful HTTP API that lets you build social networking features into your application. You can use it to register and authenticate users, search for people by name, create and manage posts, share content, leave comments, and more. Every request and response uses JSON, and all endpoints are served from a single base URL. This page covers the conventions you need to know before making your first request.
@@ -69,6 +69,7 @@ HTTP status codes signal the outcome at a high level:
 | `201 Created` | A new resource was successfully created. |
 | `400 Bad Request` | The request was malformed or failed validation. |
 | `401 Unauthorized` | Authentication is missing, invalid, or expired. |
+| `404 Not Found` | The requested resource does not exist. |
 | `422 Unprocessable Entity` | The request structure was understood but semantic validation failed. |
 | `500 Internal Server Error` | An unexpected error occurred on the server. |
 
@@ -88,8 +89,8 @@ curl http://localhost:8000/ping
 
 **Response (`200 OK`):**
 
-```json
-"pong: its works"
+```text
+pong: its works
 ```
 
 If you receive a connection error instead, confirm the server is running and that the base URL is correct.

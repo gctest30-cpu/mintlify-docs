@@ -1,15 +1,15 @@
 ---
-title: "GET /{user_id}/find-post — Retrieve a User's Posts"
+title: "GET /{user_logged}/find-post — Retrieve a User's Posts"
 sidebarTitle: "Get Posts"
-description: "GET /{user_id}/find-post retrieves all posts for a given user. Returns an array of posts with title, content, and timestamps."
+description: "GET /{user_logged}/find-post retrieves all active posts for a given user. Returns an array of post objects with title, content, and timestamps."
 ---
 
-Use this endpoint to fetch all active posts belonging to a specific user. The response is an array of post objects, each containing the post's title, content, and timestamps. Only posts that have not been soft-deleted are returned — deleted posts are automatically excluded from the results.
+Use this endpoint to fetch all active posts belonging to a specific user. The response is an array of post objects, each containing the post's title, content, and timestamps. Posts that have been deleted are automatically excluded from the results.
 
 ## Endpoint
 
 ```
-GET /{user_id}/find-post
+GET /{user_logged}/find-post
 ```
 
 ## Authentication
@@ -20,7 +20,7 @@ GET /{user_id}/find-post
 
 ## Path Parameters
 
-<ParamField path="user_id" type="string" required>
+<ParamField path="user_logged" type="string" required>
   The UUID of the user whose posts you want to retrieve.
 
   **Example:** `e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c`
@@ -39,10 +39,10 @@ curl --request GET \
 ```python Python
 import httpx
 
-USER_ID = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
+USER_LOGGED = "e3b7c2a1-4f9d-4b8e-9c3a-1d2e5f6a7b8c"
 
 response = httpx.get(
-    f"https://api.nsn.com/{USER_ID}/find-post",
+    f"https://api.nsn.com/{USER_LOGGED}/find-post",
     headers={"Authorization": "Bearer YOUR_ACCESS_TOKEN"},
 )
 print(response.json())
@@ -52,7 +52,7 @@ print(response.json())
 
 ## Response
 
-### 200 OK
+### 201 OK
 
 Returns an array of post objects. If the user has no posts, an empty array (`[]`) is returned.
 
@@ -105,5 +105,5 @@ Each object in the array contains the following fields:
 | `500 Internal Server Error` | Unexpected server error | An unhandled exception occurred while processing the request |
 
 <Note>
-  This endpoint only returns posts that are currently active. Any post that has been soft-deleted (via the `DELETE /{user_id}/{post_id}/delete-post` endpoint) will not appear in the results, even though the underlying data is still retained in the database.
+  This endpoint only returns posts that are currently active. Any post that has been removed via the `DELETE /{user_logged}/{post}/delete-post` endpoint will not appear in the results.
 </Note>
